@@ -1,0 +1,342 @@
+{% extends "core/base.html" %}
+{% load static i18n %}
+
+{% block title %}إعدادات الحساب — متواتر{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/account_settings.css' %}">
+<style>
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
+}
+
+.avatar-lg {
+    position: relative;
+    overflow: hidden;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="acc-wrap">
+  <!-- Back Button -->
+  <div class="back-button-container">
+    <a href="{% url 'core:main_menu' %}" class="btn-back">
+      ← العودة للقائمة الرئيسية
+    </a>
+  </div>
+
+  <!-- Messages -->
+  {% if messages %}
+  <div class="messages">
+    {% for message in messages %}
+    <div class="alert alert-{{ message.tags }}">
+      {{ message }}
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <!-- Profile Settings -->
+  <div class="acc-card">
+    <h2 class="acc-title">إعدادات الملف الشخصي</h2>
+    <p class="acc-subtitle">قم بتحديث معلوماتك الشخصية وإعدادات الحساب</p>
+    
+    <form method="post" enctype="multipart/form-data">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="update_profile">
+      
+      <!-- Avatar Section -->
+      <div class="avatar-section">
+        <div class="avatar-lg" id="avatar-preview">
+          {% if student.avatar %}
+            <img src="{{ student.avatar.url }}" alt="صورة الحساب">
+          {% else %}
+            <div class="avatar-fallback">{{ student.display_name|first|upper }}</div>
+          {% endif %}
+        </div>
+        
+        <div class="file-input-wrapper">
+          <input type="file" name="avatar" id="id_avatar" accept="image/*" class="form-control">
+          <label for="id_avatar" class="file-input-button">
+            📷 تغيير الصورة
+          </label>
+        </div>
+        
+        {% if student.avatar %}
+        <div class="remove-avatar-section">
+          <button type="button" class="btn-remove-avatar" onclick="showDeleteConfirm()">🗑️ حذف الصورة</button>
+        </div>
+        {% endif %}
+      </div>
+
+      <!-- Display Name -->
+      <div class="form-group">
+        <label for="id_display_name" class="form-label">اسم العرض</label>
+        <input type="text" name="display_name" id="id_display_name" class="form-control" 
+               value="{{ profile_form.display_name.value|default:student.display_name }}" 
+               placeholder="أدخل اسمك">
+      </div>
+
+      <!-- Email -->
+      <div class="form-group">
+        <label for="id_email" class="form-label">البريد الإلكتروني</label>
+        <input type="email" name="email" id="id_email" class="form-control" 
+               value="{{ profile_form.email.value|default:student.user.email }}" 
+               placeholder="أدخل بريدك الإلكتروني (اختياري)">
+        <div class="hint">يمكنك ترك هذا الحقل فارغاً إذا لم ترد إضافة بريد</div>
+      </div>
+
+      <!-- Skin Selection -->
+      <div class="form-group">
+        <label class="form-label">اختيار المظهر</label>
+        <div class="skin-grid">
+          {% for value, label in profile_form.skin.field.choices %}
+            <div class="skin-option {% if value == student.skin %}selected{% endif %}">
+              <input type="radio" name="skin" value="{{ value }}" id="skin_{{ value }}" 
+                     {% if value == student.skin %}checked{% endif %}>
+              <label for="skin_{{ value }}">
+                <img src="{% static 'img/skins/'|add:value|add:'.jpg' %}" 
+                     alt="مظهر {{ label }}" class="skin-preview">
+                <div class="skin-info">{{ label }}</div>
+              </label>
+            </div>
+          {% endfor %}
+        </div>
+        <div class="hint">اختر المظهر الذي تفضله للواجهة</div>
+      </div>
+
+      <!-- Form Actions -->
+      <div class="form-actions">
+        <button type="submit" class="btn-lg btn-primary" id="save-profile-btn" disabled>
+          💾 حفظ التغييرات
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Password Change -->
+  <div class="acc-card">
+    <h2 class="acc-title">تغيير كلمة المرور</h2>
+    <p class="acc-subtitle">قم بتحديث كلمة المرور لحماية حسابك</p>
+    
+    <form method="post">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="change_password">
+      
+      <div class="form-group">
+        <label for="id_current_password" class="form-label">كلمة المرور الحالية</label>
+        <input type="password" name="current_password" id="id_current_password" class="form-control" 
+               placeholder="أدخل كلمة المرور الحالية" required>
+      </div>
+
+      <div class="form-group">
+        <label for="id_new_password" class="form-label">كلمة المرور الجديدة</label>
+        <input type="password" name="new_password" id="id_new_password" class="form-control" 
+               placeholder="أدخل كلمة المرور الجديدة" required minlength="8">
+      </div>
+
+      <div class="form-group">
+        <label for="id_confirm_password" class="form-label">تأكيد كلمة المرور الجديدة</label>
+        <input type="password" name="confirm_password" id="id_confirm_password" class="form-control" 
+               placeholder="أعد إدخال كلمة المرور الجديدة" required>
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" class="btn-lg btn-primary" id="save-password-btn" disabled>
+          🔒 تغيير كلمة المرور
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal تأكيد حذف الصورة -->
+<div id="deleteConfirmModal" class="modal-overlay" style="display: none;">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3>تأكيد حذف الصورة</h3>
+    </div>
+    <div class="modal-body">
+      <p>هل أنت متأكد من حذف صورة الحساب؟</p>
+      <p class="modal-warning">⚠️ لا يمكن التراجع عن هذا الإجراء</p>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn-cancel" onclick="hideDeleteConfirm()">إلغاء</button>
+      <button type="button" class="btn-confirm-delete" onclick="confirmRemoveAvatar()">حذف الصورة</button>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Modal functions
+function showDeleteConfirm() {
+    const modal = document.getElementById('deleteConfirmModal');
+    modal.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+}
+
+function hideDeleteConfirm() {
+    const modal = document.getElementById('deleteConfirmModal');
+    modal.style.display = 'none';
+    document.body.style.overflow = 'auto';
+}
+
+function confirmRemoveAvatar() {
+    const form = document.querySelector('form input[name="action"][value="update_profile"]').closest('form');
+    if (!form) return;
+    
+    const hiddenInput = document.createElement('input');
+    hiddenInput.type = 'hidden';
+    hiddenInput.name = 'remove_avatar';
+    hiddenInput.value = '1';
+    form.appendChild(hiddenInput);
+    
+    hideDeleteConfirm();
+    form.submit();
+}
+
+function clearEmail() {
+    const emailInput = document.getElementById('id_email');
+    if (emailInput) {
+        emailInput.value = '';
+        emailInput.focus();
+    }
+}
+
+// معاينة الصورة قبل الحفظ
+function setupImagePreview() {
+    const avatarInput = document.getElementById('id_avatar');
+    const avatarPreview = document.getElementById('avatar-preview');
+    
+    if (avatarInput && avatarPreview) {
+        avatarInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                // التحقق من نوع الملف
+                if (!file.type.startsWith('image/')) {
+                    alert('يرجى اختيار ملف صورة صالح');
+                    this.value = '';
+                    return;
+                }
+                
+                // التحقق من حجم الملف (5MB كحد أقصى)
+                if (file.size > 5 * 1024 * 1024) {
+                    alert('حجم الصورة كبير جداً. الحد الأقصى 5 ميجابايت');
+                    this.value = '';
+                    return;
+                }
+                
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    // إزالة المحتوى السابق
+                    avatarPreview.innerHTML = '';
+                    
+                    // إنشاء عنصر الصورة الجديد
+                    const img = document.createElement('img');
+                    img.src = e.target.result;
+                    img.alt = 'معاينة الصورة الجديدة';
+                    img.style.width = '100%';
+                    img.style.height = '100%';
+                    img.style.objectFit = 'cover';
+                    img.style.borderRadius = '50%';
+                    
+                    // إضافة تأثير انتقال ناعم
+                    img.style.opacity = '0';
+                    img.style.transition = 'opacity 0.3s ease';
+                    
+                    avatarPreview.appendChild(img);
+                    
+                    // إظهار الصورة مع تأثير
+                    setTimeout(() => {
+                        img.style.opacity = '1';
+                    }, 10);
+                    
+                    // إضافة مؤشر "جديد"
+                    const newBadge = document.createElement('div');
+                    newBadge.innerHTML = '🆕';
+                    newBadge.style.position = 'absolute';
+                    newBadge.style.top = '5px';
+                    newBadge.style.right = '5px';
+                    newBadge.style.background = 'rgba(34, 197, 94, 0.9)';
+                    newBadge.style.color = 'white';
+                    newBadge.style.borderRadius = '50%';
+                    newBadge.style.width = '24px';
+                    newBadge.style.height = '24px';
+                    newBadge.style.display = 'flex';
+                    newBadge.style.alignItems = 'center';
+                    newBadge.style.justifyContent = 'center';
+                    newBadge.style.fontSize = '12px';
+                    newBadge.style.zIndex = '10';
+                    newBadge.style.animation = 'pulse 2s infinite';
+                    
+                    avatarPreview.appendChild(newBadge);
+                    
+                    // إزالة المؤشر بعد 3 ثوان
+                    setTimeout(() => {
+                        if (newBadge.parentNode) {
+                            newBadge.parentNode.removeChild(newBadge);
+                        }
+                    }, 3000);
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+    }
+}
+
+// إدارة تفعيل أزرار الحفظ
+function checkFormChanges() {
+    const profileForm = document.querySelector('form input[name="action"][value="update_profile"]').closest('form');
+    const passwordForm = document.querySelector('form input[name="action"][value="change_password"]').closest('form');
+    
+    // تفعيل زر حفظ الملف الشخصي
+    if (profileForm) {
+        const saveBtn = document.getElementById('save-profile-btn');
+        const inputs = profileForm.querySelectorAll('input[type="text"], input[type="email"], input[type="file"], input[type="radio"]');
+        
+        inputs.forEach(input => {
+            input.addEventListener('input', () => {
+                saveBtn.disabled = false;
+            });
+            input.addEventListener('change', () => {
+                saveBtn.disabled = false;
+            });
+        });
+    }
+    
+    // تفعيل زر تغيير كلمة المرور
+    if (passwordForm) {
+        const saveBtn = document.getElementById('save-password-btn');
+        const inputs = passwordForm.querySelectorAll('input[type="password"]');
+        
+        inputs.forEach(input => {
+            input.addEventListener('input', () => {
+                const allFilled = Array.from(inputs).every(inp => inp.value.trim() !== '');
+                saveBtn.disabled = !allFilled;
+            });
+        });
+    }
+}
+
+// Event listeners
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') hideDeleteConfirm();
+});
+
+document.getElementById('deleteConfirmModal')?.addEventListener('click', function(e) {
+    if (e.target === this) hideDeleteConfirm();
+});
+
+// تفعيل فحص التغييرات عند تحميل الصفحة
+document.addEventListener('DOMContentLoaded', function() {
+    checkFormChanges();
+    setupImagePreview();
+});
+</script>
+{% endblock %}

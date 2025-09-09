@@ -1,0 +1,1491 @@
+{% extends 'core/base.html' %}
+{% load static %}
+{% load arabic_extras %}
+
+{% block title %}المصحف الإلكتروني - {{ quarter_info.juz_no }}:{{ quarter_info.quarter_index }}{% endblock %}
+
+{% block content %}
+<div class="quran-viewer">
+    <!-- شريط الأدوات العلوي -->
+    <div class="quran-toolbar">
+        <div class="toolbar-left">
+            <div class="quarter-info">
+                <span class="juz-number">الجزء {{ quarter_info.juz_no }}</span>
+                <span class="quarter-number">الربع {{ quarter_info.quarter_index }}</span>
+                {% if quarter_info.quarter_name %}
+                <span class="quarter-name">{{ quarter_info.quarter_name }}</span>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="toolbar-center">
+            {% if current_phrase %}
+            <div class="phrase-display">
+                <span class="phrase-label">العبارة المطلوبة:</span>
+                <span class="phrase-text">{{ current_phrase }}</span>
+            </div>
+            {% endif %}
+        </div>
+        
+        <div class="toolbar-right">
+            {% if positions_info %}
+            <div class="positions-indicator">
+                <span class="position-text">الموضع {{ positions_info.positions|length }} من {{ positions_info.total }}</span>
+                <div class="positions-dots">
+                    {% for position in positions_info.positions %}
+                    <span class="position-dot {% if position.completed %}completed{% elif position.current %}current{% endif %}"></span>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- عرض المصحف -->
+    <div class="quran-content">
+        {% if spreads %}
+        <div class="quran-pages">
+            {% for left_page, right_page in spreads %}
+            <div class="page-spread">
+                <!-- الصفحة اليسرى -->
+                <div class="quran-page left-page" data-page="{{ left_page }}">
+                    <div class="page-header">
+                        <div class="page-number">{{ left_page }}</div>
+                        <div class="page-info">صفحة {{ left_page }}</div>
+                    </div>
+                    
+                    <div class="page-content">
+                        <div class="mushaf-page" id="page-{{ left_page }}-content">
+                            <!-- هنا ستظهر صفحة المصحف -->
+                            <img src="/media/pages/{{ left_page }}.svg" alt="صفحة {{ left_page }}" class="mushaf-image" style="width: 100%; height: auto;">
+                        </div>
+                    </div>
+                    
+                    <div class="page-footer">
+                        <div class="page-actions">
+                            <button class="btn-select-page" onclick="loadMushafPage({{ left_page }})">
+                                تحديد الصفحة
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- الصفحة اليمنى (إذا وجدت) -->
+                {% if right_page %}
+                <div class="quran-page right-page" data-page="{{ right_page }}">
+                    <div class="page-header">
+                        <div class="page-number">{{ right_page }}</div>
+                        <div class="page-info">صفحة {{ right_page }}</div>
+                    </div>
+                    
+                    <div class="page-content">
+                        <div class="mushaf-page" id="page-{{ right_page }}-content">
+                            <!-- هنا ستظهر صفحة المصحف -->
+                            <img src="/media/pages/{{ right_page }}.svg" alt="صفحة {{ right_page }}" class="w-full h-auto">
+                        </div>
+                    </div>
+                    
+                    <div class="page-footer">
+                        <div class="page-actions">
+                            <button class="btn-select-page" onclick="loadMushafPage({{ right_page }})">
+                                تحديد الصفحة
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="no-pages-message">
+            <div class="alert alert-warning text-center">
+                <h4>لا توجد صفحات لهذا الربع</h4>
+                <p>يرجى العودة واختيار ربع آخر</p>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- شريط التحكم السفلي -->
+    <div class="quran-controls">
+        <div class="controls-left">
+            <button class="btn-back" onclick="goBack()">
+                <i class="fas fa-arrow-right"></i>
+                العودة لاختيار الربع
+            </button>
+        </div>
+        
+        <div class="controls-center">
+            <div class="instructions">
+                <h6>تعليمات الاختبار:</h6>
+                <ol>
+                    <li>اضغط "عرض الآيات" لرؤية صفحة القرآن</li>
+                    <li>الآيات ستظهر مخفية مع أرقامها</li>
+                    <li>انقر على الآية التي تحتوي على العبارة المطلوبة</li>
+                    <li>إذا كان اختيارك صحيحاً، ستظهر العبارة</li>
+                </ol>
+            </div>
+        </div>
+        
+        <div class="controls-right">
+            <div class="test-progress">
+                <span class="progress-label">تقدم الاختبار</span>
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: 0%"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.quran-viewer {
+    background: #f8f9fa;
+    min-height: 100vh;
+    font-family: 'Uthman Taha', 'Amiri', 'Scheherazade', serif;
+    direction: rtl;
+}
+
+.quran-toolbar {
+    background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+    color: white;
+    padding: 1rem 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+}
+
+.toolbar-left .quarter-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.juz-number, .quarter-number {
+    font-size: 1.2rem;
+    font-weight: bold;
+}
+
+.quarter-name {
+    font-size: 1rem;
+    opacity: 0.9;
+    font-style: italic;
+}
+
+.toolbar-center .phrase-display {
+    text-align: center;
+    background: rgba(255,255,255,0.1);
+    padding: 0.5rem 1rem;
+    border-radius: 25px;
+    backdrop-filter: blur(10px);
+}
+
+.phrase-label {
+    font-size: 0.9rem;
+    opacity: 0.8;
+    margin-left: 0.5rem;
+}
+
+.phrase-text {
+    font-size: 1.1rem;
+    font-weight: 500;
+    margin-right: 0.5rem;
+}
+
+.toolbar-right .positions-indicator {
+    text-align: center;
+}
+
+.position-text {
+    font-size: 0.9rem;
+    opacity: 0.9;
+    margin-bottom: 0.5rem;
+    display: block;
+}
+
+.positions-dots {
+    display: flex;
+    gap: 0.3rem;
+    justify-content: center;
+}
+
+.position-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.3);
+    transition: all 0.3s ease;
+}
+
+.position-dot.current {
+    background: #3498db;
+    transform: scale(1.2);
+}
+
+.position-dot.completed {
+    background: #27ae60;
+}
+
+.quran-content {
+    padding: 2rem;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.quran-pages {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+}
+
+.page-spread {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.quran-page {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    overflow: hidden;
+    min-height: 800px;
+    display: flex;
+    flex-direction: column;
+}
+
+.page-header {
+    background: linear-gradient(135deg, #2c3e50, #34495e);
+    color: white;
+    padding: 1rem;
+    text-align: center;
+    border-bottom: 2px solid #e74c3c;
+}
+
+.page-number {
+    font-size: 1.5rem;
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+}
+
+.page-info {
+    font-size: 0.9rem;
+    opacity: 0.9;
+}
+
+.page-content {
+    flex: 1;
+    padding: 2rem;
+    background: #fefefe;
+    position: relative;
+}
+
+.ayah-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    min-height: 600px;
+}
+
+.ayah-placeholder {
+    text-align: center;
+    color: #6c757d;
+    font-style: italic;
+    padding: 2rem;
+}
+
+/* صفحة المصحف المطابقة للصورة */
+.mushaf-page {
+    background: white;
+    border: 8px solid #000;
+    border-radius: 0;
+    padding: 2rem;
+    min-height: 800px;
+    position: relative;
+    direction: rtl;
+}
+
+.mushaf-placeholder {
+    text-align: center;
+    color: #6c757d;
+    font-style: italic;
+    padding: 2rem;
+    font-size: 1.1rem;
+}
+
+/* معلومات الجزء والسورة */
+.mushaf-header {
+    text-align: center;
+    margin-bottom: 2rem;
+    font-family: 'Uthman Taha', serif;
+}
+
+.juz-title {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #000;
+    margin-bottom: 0.5rem;
+}
+
+.surah-title {
+    font-size: 1.1rem;
+    color: #000;
+    margin-bottom: 1rem;
+}
+
+/* شريط عنوان السورة */
+.surah-banner {
+    background: linear-gradient(135deg, #ffd700, #ffed4e);
+    border: 2px solid #8b4513;
+    border-radius: 25px;
+    padding: 1rem 2rem;
+    text-align: center;
+    margin: 2rem 0;
+    box-shadow: 0 4px 15px rgba(139, 69, 19, 0.3);
+}
+
+.surah-banner-text {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #8b4513;
+    font-family: 'Uthman Taha', serif;
+}
+
+/* البسملة */
+.basmala {
+    text-align: center;
+    font-size: 1.8rem;
+    font-weight: bold;
+    color: #000;
+    margin: 2rem 0;
+    font-family: 'Uthman Taha', serif;
+}
+
+.basmala-line {
+    height: 2px;
+    background: #000;
+    margin: 1rem auto;
+    width: 80%;
+}
+
+/* منطقة الآيات */
+.verses-area {
+    margin-top: 3rem;
+    min-height: 400px;
+}
+
+.verse-line {
+    height: 3px;
+    background: rgba(0,0,0,0.1);
+    margin: 1.5rem 0;
+    position: relative;
+    border-radius: 2px;
+}
+
+/* أرقام الآيات */
+.verse-number {
+    position: absolute;
+    right: -25px;
+    top: -12px;
+    width: 30px;
+    height: 30px;
+    background: white;
+    border: 2px solid #000;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 0.9rem;
+    color: #000;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.verse-number:hover {
+    background: #f0f0f0;
+    transform: scale(1.1);
+}
+
+.verse-number.selected {
+    background: #28a745;
+    color: white;
+    border-color: #28a745;
+}
+
+/* رقم الصفحة */
+.page-number-bottom {
+    position: absolute;
+    bottom: 1rem;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #000;
+    background: white;
+    padding: 0.5rem 1rem;
+    border: 2px solid #000;
+    border-radius: 8px;
+}
+
+.quran-pages {
+    display: grid;
+    gap: 2rem;
+}
+
+.page-spread {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    background: white;
+    padding: 2rem;
+    border-radius: 15px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+}
+
+.quran-page {
+    background: #fefefe;
+    border: 2px solid #e9ecef;
+    border-radius: 10px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    min-height: 500px;
+    display: flex;
+    flex-direction: column;
+}
+
+.quran-page:hover {
+    border-color: #3498db;
+    box-shadow: 0 8px 25px rgba(52,152,219,0.2);
+    transform: translateY(-2px);
+}
+
+.quran-page.selected {
+    border-color: #27ae60;
+    background: #f8fff9;
+    box-shadow: 0 8px 25px rgba(39,174,96,0.2);
+}
+
+.page-header {
+    background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+    color: white;
+    padding: 1rem;
+    text-align: center;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.page-number {
+    font-size: 2rem;
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+}
+
+.page-info {
+    font-size: 1rem;
+    opacity: 0.9;
+}
+
+.page-content {
+    flex: 1;
+    padding: 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.ayah-grid {
+    width: 100%;
+    text-align: center;
+}
+
+.ayah-placeholder {
+    background: #f8f9fa;
+    border: 2px dashed #dee2e6;
+    border-radius: 10px;
+    padding: 3rem 2rem;
+    color: #6c757d;
+    font-size: 1.1rem;
+    font-style: italic;
+}
+
+.page-footer {
+    background: #f8f9fa;
+    padding: 1rem;
+    border-top: 1px solid #e9ecef;
+}
+
+.page-actions {
+    text-align: center;
+}
+
+.btn-select-page {
+    background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 25px;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 10px rgba(39,174,96,0.3);
+}
+
+.btn-select-page:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(39,174,96,0.4);
+}
+
+.quran-controls {
+    background: white;
+    padding: 2rem;
+    border-top: 1px solid #e9ecef;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 2rem;
+}
+
+.controls-left .btn-back {
+    background: #6c757d;
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 25px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.btn-back:hover {
+    background: #5a6268;
+    transform: translateX(-2px);
+}
+
+.controls-center .instructions {
+    background: #e3f2fd;
+    padding: 1.5rem;
+    border-radius: 10px;
+    border-left: 4px solid #2196f3;
+}
+
+.instructions h6 {
+    color: #1976d2;
+    margin-bottom: 1rem;
+}
+
+.instructions ol {
+    margin: 0;
+    padding-right: 1.5rem;
+    color: #424242;
+}
+
+.instructions li {
+    margin-bottom: 0.5rem;
+    line-height: 1.6;
+}
+
+.controls-right .test-progress {
+    text-align: center;
+}
+
+.progress-label {
+    font-size: 0.9rem;
+    color: #6c757d;
+    margin-bottom: 0.5rem;
+    display: block;
+}
+
+.progress-bar {
+    width: 200px;
+    height: 8px;
+    background: #e9ecef;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #27ae60 0%, #2ecc71 100%);
+    transition: width 0.5s ease;
+}
+
+.no-pages-message {
+    text-align: center;
+    padding: 4rem 2rem;
+}
+
+@media (max-width: 768px) {
+    .quran-toolbar {
+        flex-direction: column;
+        gap: 1rem;
+        padding: 1rem;
+    }
+    
+    .page-spread {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+    
+    .quran-controls {
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .quran-content {
+        padding: 1rem;
+    }
+}
+</style>
+
+<script>
+let selectedPage = null;
+let currentPhrase = "{{ current_phrase|escapejs }}";
+let currentPosition = {{ positions_info.current|default:1 }};
+
+function loadMushafPage(pageNumber) {
+    // إزالة التحديد من جميع الصفحات
+    document.querySelectorAll('.quran-page').forEach(page => {
+        page.classList.remove('selected');
+    });
+    
+    // تحديد الصفحة المختارة
+    const pageElement = document.querySelector(`[data-page="${pageNumber}"]`);
+    if (pageElement) {
+        pageElement.classList.add('selected');
+        selectedPage = pageNumber;
+        
+        // تحديث شريط التقدم
+        updateProgress(25);
+        
+        // إظهار رسالة تأكيد
+        showPageSelectedMessage(pageNumber);
+        
+        // إظهار الصفحة مباشرة (الصور موجودة بالفعل)
+        showPageSelected(pageNumber);
+    }
+}
+
+function loadMushafContent(pageNumber) {
+    const contentDiv = document.getElementById(`page-${pageNumber}-content`);
+    if (!contentDiv) return;
+    
+    // إظهار رسالة التحميل
+    contentDiv.innerHTML = '<div class="loading-message">جاري تحميل صفحة المصحف...</div>';
+    
+    // محاكاة تحميل صفحة المصحف
+    setTimeout(() => {
+        displayMushafPage(contentDiv, pageNumber);
+    }, 1000);
+}
+
+function displayMushafPage(contentDiv, pageNumber) {
+    // محاكاة صفحة المصحف (في التطبيق الحقيقي ستأتي من قاعدة البيانات)
+    const mushafData = generateMushafData(pageNumber);
+    
+    let html = `
+        <div class="mushaf-header">
+            <div class="juz-title">الجزء السابع والعشرون</div>
+            <div class="surah-title">سورة الرحمن</div>
+        </div>
+        
+        <div class="surah-banner">
+            <div class="surah-banner-text">سورة الرحمن</div>
+        </div>
+        
+        <div class="basmala">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</div>
+        <div class="basmala-line"></div>
+        
+        <div class="verses-area">
+    `;
+    
+    // إضافة خطوط الآيات مع أرقامها
+    mushafData.verses.forEach((verse, index) => {
+        html += `
+            <div class="verse-line">
+                <div class="verse-number" onclick="selectVerse(${verse.number})">${verse.number}</div>
+            </div>
+        `;
+    });
+    
+    html += `
+        </div>
+        
+        <div class="page-number-bottom">${pageNumber}</div>
+    `;
+    
+    contentDiv.innerHTML = html;
+}
+
+function generateMushafData(pageNumber) {
+    // محاكاة بيانات صفحة المصحف
+    const verses = [];
+    const startNumber = (pageNumber - 1) * 15 + 53; // بداية من آية 53
+    
+    for (let i = 0; i < 15; i++) {
+        verses.push({
+            number: startNumber + i,
+            text: `آية ${startNumber + i} من سورة الرحمن`
+        });
+    }
+    
+    return {
+        juz: 27,
+        surah: 'الرحمن',
+        verses: verses,
+        pageNumber: pageNumber
+    };
+}
+
+function showPageSelected(pageNumber) {
+    // إظهار رسالة تأكيد
+    const pageElement = document.querySelector(`[data-page="${pageNumber}"]`);
+    if (pageElement) {
+        // إضافة تأثير بصري
+        pageElement.style.border = '3px solid #28a745';
+        pageElement.style.boxShadow = '0 0 15px rgba(40, 167, 69, 0.5)';
+        
+        // رسالة تأكيد
+        const message = `تم تحديد صفحة ${pageNumber} بنجاح!`;
+        showToast(message, 'success');
+    }
+}
+
+function selectVerse(verseNumber) {
+    // إزالة التحديد من جميع الآيات
+    document.querySelectorAll('.verse-number').forEach(verse => {
+        verse.classList.remove('selected');
+    });
+    
+    // تحديد الآية المختارة
+    const verseElement = document.querySelector(`.verse-number:contains('${verseNumber}')`);
+    if (verseElement) {
+        verseElement.classList.add('selected');
+        
+        // التحقق من صحة الاختيار
+        checkVerseSelection(verseNumber);
+    }
+}
+
+function checkVerseSelection(verseNumber) {
+    // محاكاة التحقق من صحة الاختيار
+    // في التطبيق الحقيقي سيتم التحقق من قاعدة البيانات
+    
+    // إظهار رسالة تأكيد
+    showVerseSelectedMessage(verseNumber);
+    
+    // تحديث شريط التقدم
+    updateProgress(50);
+    
+    // هنا يمكن إضافة منطق التحقق من صحة الاختيار
+    console.log('تم اختيار الآية:', verseNumber);
+}
+
+function showPageSelectedMessage(pageNumber) {
+    // إنشاء رسالة تأكيد
+    const message = document.createElement('div');
+    message.className = 'page-selected-message';
+    message.innerHTML = `
+        <div class="message-content">
+            <h4>تم اختيار الصفحة ${pageNumber}</h4>
+            <p>ستظهر لك الآيات الآن. اختر مكان العبارة في الصفحة.</p>
+        </div>
+    `;
+    
+    // إضافة الرسالة للصفحة
+    document.body.appendChild(message);
+    
+    // إزالة الرسالة بعد 3 ثواني
+    setTimeout(() => {
+        message.remove();
+    }, 3000);
+}
+
+function showVerseSelectedMessage(verseNumber) {
+    // إنشاء رسالة تأكيد اختيار الآية
+    const message = document.createElement('div');
+    message.className = 'verse-selected-message';
+    message.innerHTML = `
+        <div class="message-content">
+            <h4>تم اختيار الآية ${verseNumber}</h4>
+            <p>جاري التحقق من صحة الاختيار...</p>
+        </div>
+    `;
+    
+    // إضافة الرسالة للصفحة
+    document.body.appendChild(message);
+    
+    // إزالة الرسالة بعد 2 ثانية
+    setTimeout(() => {
+        message.remove();
+    }, 2000);
+}
+
+function updateProgress(percentage) {
+    const progressFill = document.querySelector('.progress-fill');
+    if (progressFill) {
+        progressFill.style.width = percentage + '%';
+    }
+}
+
+function goBack() {
+    // العودة لصفحة اختيار الربع
+    window.history.back();
+}
+
+// إضافة CSS للرسائل
+const style = document.createElement('style');
+style.textContent = `
+.page-selected-message,
+.verse-selected-message {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: white;
+    padding: 2rem;
+    border-radius: 15px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    z-index: 10000;
+    animation: slideIn 0.3s ease;
+}
+
+.message-content {
+    text-align: center;
+}
+
+.message-content h4 {
+    color: #27ae60;
+    margin-bottom: 1rem;
+}
+
+.message-content p {
+    color: #6c757d;
+    margin: 0;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.8);
+    }
+    to {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+    }
+}
+
+.loading-message {
+    text-align: center;
+    color: #6c757d;
+    font-style: italic;
+    padding: 2rem;
+    font-size: 1.1rem;
+}
+`;
+document.head.appendChild(style);
+</script>
+{% endblock %}
+
+
+    color: white;
+
+    padding: 1rem;
+
+    text-align: center;
+
+    border-bottom: 1px solid #e9ecef;
+
+}
+
+
+
+.page-number {
+
+    font-size: 2rem;
+
+    font-weight: bold;
+
+    margin-bottom: 0.5rem;
+
+}
+
+
+
+.page-info {
+
+    font-size: 1rem;
+
+    opacity: 0.9;
+
+}
+
+
+
+.page-content {
+
+    flex: 1;
+
+    padding: 2rem;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+}
+
+
+
+.ayah-grid {
+
+    width: 100%;
+
+    text-align: center;
+
+}
+
+
+
+.ayah-placeholder {
+
+    background: #f8f9fa;
+
+    border: 2px dashed #dee2e6;
+
+    border-radius: 10px;
+
+    padding: 3rem 2rem;
+
+    color: #6c757d;
+
+    font-size: 1.1rem;
+
+    font-style: italic;
+
+}
+
+
+
+.page-footer {
+
+    background: #f8f9fa;
+
+    padding: 1rem;
+
+    border-top: 1px solid #e9ecef;
+
+}
+
+
+
+.page-actions {
+
+    text-align: center;
+
+}
+
+
+
+.btn-select-page {
+
+    background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+
+    color: white;
+
+    border: none;
+
+    padding: 0.75rem 1.5rem;
+
+    border-radius: 25px;
+
+    font-size: 1rem;
+
+    font-weight: 500;
+
+    cursor: pointer;
+
+    transition: all 0.3s ease;
+
+    box-shadow: 0 2px 10px rgba(39,174,96,0.3);
+
+}
+
+
+
+.btn-select-page:hover {
+
+    transform: translateY(-2px);
+
+    box-shadow: 0 4px 15px rgba(39,174,96,0.4);
+
+}
+
+
+
+.quran-controls {
+
+    background: white;
+
+    padding: 2rem;
+
+    border-top: 1px solid #e9ecef;
+
+    display: flex;
+
+    justify-content: space-between;
+
+    align-items: center;
+
+    gap: 2rem;
+
+}
+
+
+
+.controls-left .btn-back {
+
+    background: #6c757d;
+
+    color: white;
+
+    border: none;
+
+    padding: 0.75rem 1.5rem;
+
+    border-radius: 25px;
+
+    font-size: 1rem;
+
+    cursor: pointer;
+
+    transition: all 0.3s ease;
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 0.5rem;
+
+}
+
+
+
+.btn-back:hover {
+
+    background: #5a6268;
+
+    transform: translateX(-2px);
+
+}
+
+
+
+.controls-center .instructions {
+
+    background: #e3f2fd;
+
+    padding: 1.5rem;
+
+    border-radius: 10px;
+
+    border-left: 4px solid #2196f3;
+
+}
+
+
+
+.instructions h6 {
+
+    color: #1976d2;
+
+    margin-bottom: 1rem;
+
+}
+
+
+
+.instructions ol {
+
+    margin: 0;
+
+    padding-right: 1.5rem;
+
+    color: #424242;
+
+}
+
+
+
+.instructions li {
+
+    margin-bottom: 0.5rem;
+
+    line-height: 1.6;
+
+}
+
+
+
+.controls-right .test-progress {
+
+    text-align: center;
+
+}
+
+
+
+.progress-label {
+
+    font-size: 0.9rem;
+
+    color: #6c757d;
+
+    margin-bottom: 0.5rem;
+
+    display: block;
+
+}
+
+
+
+.progress-bar {
+
+    width: 200px;
+
+    height: 8px;
+
+    background: #e9ecef;
+
+    border-radius: 4px;
+
+    overflow: hidden;
+
+}
+
+
+
+.progress-fill {
+
+    height: 100%;
+
+    background: linear-gradient(90deg, #27ae60 0%, #2ecc71 100%);
+
+    transition: width 0.5s ease;
+
+}
+
+
+
+.no-pages-message {
+
+    text-align: center;
+
+    padding: 4rem 2rem;
+
+}
+
+
+
+@media (max-width: 768px) {
+
+    .quran-toolbar {
+
+        flex-direction: column;
+
+        gap: 1rem;
+
+        padding: 1rem;
+
+    }
+
+    
+
+    .page-spread {
+
+        grid-template-columns: 1fr;
+
+        gap: 1rem;
+
+    }
+
+    
+
+    .quran-controls {
+
+        flex-direction: column;
+
+        gap: 1rem;
+
+    }
+
+    
+
+    .quran-content {
+
+        padding: 1rem;
+
+    }
+
+}
+
+</style>
+
+
+
+<script>
+
+let selectedPage = null;
+
+
+
+function selectPage(pageNumber) {
+
+    // إزالة التحديد من جميع الصفحات
+
+    document.querySelectorAll('.quran-page').forEach(page => {
+
+        page.classList.remove('selected');
+
+    });
+
+    
+
+    // تحديد الصفحة المختارة
+
+    const pageElement = document.querySelector(`[data-page="${pageNumber}"]`);
+
+    if (pageElement) {
+
+        pageElement.classList.add('selected');
+
+        selectedPage = pageNumber;
+
+        
+
+        // تحديث شريط التقدم
+
+        updateProgress(25);
+
+        
+
+        // إظهار رسالة تأكيد
+
+        showPageSelectedMessage(pageNumber);
+
+        
+
+        // هنا يمكن إضافة منطق إظهار الآيات
+
+        console.log('تم اختيار الصفحة:', pageNumber);
+
+    }
+
+}
+
+
+
+function showPageSelectedMessage(pageNumber) {
+
+    // إنشاء رسالة تأكيد
+
+    const message = document.createElement('div');
+
+    message.className = 'page-selected-message';
+
+    message.innerHTML = `
+
+        <div class="message-content">
+
+            <h4>تم اختيار الصفحة ${pageNumber}</h4>
+
+            <p>ستظهر لك الآيات الآن. اختر مكان العبارة في الصفحة.</p>
+
+        </div>
+
+    `;
+
+    
+
+    // إضافة الرسالة للصفحة
+
+    document.body.appendChild(message);
+
+    
+
+    // إزالة الرسالة بعد 3 ثواني
+
+    setTimeout(() => {
+
+        message.remove();
+
+    }, 3000);
+
+}
+
+
+
+function updateProgress(percentage) {
+
+    const progressFill = document.querySelector('.progress-fill');
+
+    if (progressFill) {
+
+        progressFill.style.width = percentage + '%';
+
+    }
+
+}
+
+
+
+function goBack() {
+
+    // العودة لصفحة اختيار الربع
+
+    window.history.back();
+
+}
+
+
+
+// إضافة CSS للرسالة
+
+const style = document.createElement('style');
+
+style.textContent = `
+
+.page-selected-message {
+
+    position: fixed;
+
+    top: 50%;
+
+    left: 50%;
+
+    transform: translate(-50%, -50%);
+
+    background: white;
+
+    padding: 2rem;
+
+    border-radius: 15px;
+
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+
+    z-index: 10000;
+
+    animation: slideIn 0.3s ease;
+
+}
+
+
+
+.message-content {
+
+    text-align: center;
+
+}
+
+
+
+.message-content h4 {
+
+    color: #27ae60;
+
+    margin-bottom: 1rem;
+
+}
+
+
+
+.message-content p {
+
+    color: #6c757d;
+
+    margin: 0;
+
+}
+
+
+
+@keyframes slideIn {
+
+    from {
+
+        opacity: 0;
+
+        transform: translate(-50%, -50%) scale(0.8);
+
+    }
+
+    to {
+
+        opacity: 1;
+
+        transform: translate(-50%, -50%) scale(1);
+
+    }
+
+}
+
+`;
+
+document.head.appendChild(style);
+
+// دالة عرض الإشعارات
+function showToast(message, type = 'info', duration = 4000) {
+    // إنشاء عنصر الإشعار
+    const toast = document.createElement('div');
+    toast.className = `toast toast--${type}`;
+    toast.innerHTML = `
+        <span>${message}</span>
+        <button class="toast__close" aria-label="إغلاق" title="إغلاق">&times;</button>
+    `;
+    
+    // إضافة الإشعار إلى الحاوية
+    let toastRoot = document.getElementById('toast-root');
+    if (!toastRoot) {
+        toastRoot = document.createElement('div');
+        toastRoot.id = 'toast-root';
+        toastRoot.className = 'toast-root';
+        toastRoot.setAttribute('aria-live', 'polite');
+        toastRoot.setAttribute('aria-atomic', 'true');
+        document.body.appendChild(toastRoot);
+    }
+    
+    toastRoot.appendChild(toast);
+    
+    // دالة إغلاق الإشعار
+    const closeToast = () => {
+        toast.style.animation = 'toast-out 0.4s ease forwards';
+        setTimeout(() => {
+            if (toast.parentNode) {
+                toast.parentNode.removeChild(toast);
+            }
+        }, 400);
+    };
+    
+    // إضافة مستمع النقر على زر الإغلاق
+    const closeBtn = toast.querySelector('.toast__close');
+    if (closeBtn) {
+        closeBtn.addEventListener('click', closeToast);
+    }
+    
+    // إغلاق تلقائي بعد المدة المحددة
+    setTimeout(closeToast, duration);
+}
+
+</script>
+{% endblock %}

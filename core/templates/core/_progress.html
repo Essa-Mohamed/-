@@ -1,0 +1,63 @@
+{# core/_progress.html #}
+<div class="progress-wrap" dir="ltr" style="--ring:#2a3342; --track:#364152; --val:#f1cf6b">
+  <svg class="progress" viewBox="0 0 120 120" aria-label="{{ aria_label|default:'Progress' }}">
+    <circle class="progress-bg" cx="60" cy="60" r="52"></circle>
+    <circle class="progress-track" cx="60" cy="60" r="52"></circle>
+    <circle class="progress-value" cx="60" cy="60" r="52"></circle>
+  </svg>
+  <div class="progress-text">
+    <div class="progress-main"><span id="progressPct">{{ pct|default:0 }}</span>%</div>
+    {% if step_no and target_total %}
+      <div class="progress-sub">{{ step_no }}/{{ target_total }}</div>
+    {% elif sub_label %}
+      <div class="progress-sub">{{ sub_label }}</div>
+    {% endif %}
+  </div>
+</div>
+
+<style>
+.progress-wrap{
+  position:relative; width:140px; height:140px;
+  display:inline-flex; align-items:center; justify-content:center;
+}
+.progress{ width:100%; height:100%; filter: drop-shadow(0 1px 2px rgba(0,0,0,.25)); }
+.progress-bg{ fill:none; stroke: var(--ring,#2a3342); stroke-width: 9; }
+.progress-track{ fill:none; stroke: var(--track,#3a475c); stroke-width: 10; opacity:.85; }
+.progress-value{
+  fill:none; stroke: var(--val,#f1cf6b);
+  stroke-width: 10; stroke-linecap: round;
+  transform: rotate(-90deg); transform-origin: 60px 60px;
+  stroke-dasharray: 327; stroke-dashoffset: 327;
+  transition: stroke-dashoffset .5s ease;
+}
+.progress-text{
+  position:absolute; inset:0; display:flex; flex-direction:column;
+  align-items:center; justify-content:center; text-align:center;
+  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Tahoma, Arial;
+}
+.progress-main{ font-size:22px; font-weight:900; line-height:1; color:#e5e7eb; letter-spacing:.3px; }
+.progress-sub{ font-size:12px; color:#9aa3b2; margin-top:4px; }
+@media (prefers-color-scheme: light){
+  .progress-bg{ stroke:#f2f4f7 }
+  .progress-track{ stroke:#e5e7eb }
+  .progress-main{ color:#1f2937 }
+  .progress-sub{ color:#64748b }
+}
+</style>
+
+<script>
+(function(){
+  var pct = Number('{{ pct|default:0 }}') || 0;
+  var circumference = 327; // 2πr حيث r=52
+  var clamped = Math.max(0, Math.min(100, pct));
+  var offset = circumference * (1 - clamped / 100);
+  var ring = document.currentScript && document.currentScript.previousElementSibling ?
+             document.currentScript.previousElementSibling.querySelector('.progress-value') :
+             document.querySelector('.flow-hud .progress-value'); // fallback
+  var label = document.currentScript && document.currentScript.previousElementSibling ?
+             document.currentScript.previousElementSibling.querySelector('#progressPct') :
+             document.getElementById('progressPct');
+  if (ring) ring.style.strokeDashoffset = offset;
+  if (label) label.textContent = clamped;
+})();
+</script>

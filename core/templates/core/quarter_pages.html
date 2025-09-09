@@ -1,0 +1,365 @@
+{% extends "core/base.html" %}
+{% load static i18n arabic_extras %}
+
+{% block title %}صفحات الربع — متواتر{% endblock %}
+
+{% block content %}
+<style>
+  .page-shell {
+    min-height: 72vh;
+    display: grid;
+    gap: 1rem;
+    align-content: start;
+  }
+  
+  .header-card {
+    padding: 1.5rem;
+    border-radius: 16px;
+    background: linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.015));
+    border: 1px solid rgba(255,255,255,.10);
+    box-shadow: 0 14px 36px rgba(0,0,0,.22);
+  }
+  
+  .header-card h1 {
+    margin: 0 0 1rem 0;
+    color: #fff;
+    font-weight: 900;
+    font-size: 1.8rem;
+  }
+  
+  .header-card p {
+    margin: 0;
+    color: rgba(255,255,255,.8);
+    font-size: 1rem;
+    line-height: 1.6;
+  }
+  
+  .feedback-message {
+    padding: 1rem;
+    border-radius: 12px;
+    margin: 1rem 0;
+    border: 1px solid;
+  }
+  
+  .feedback-message.success {
+    background: rgba(34,197,94,.1);
+    border-color: rgba(34,197,94,.3);
+    color: #4ade80;
+  }
+  
+  .feedback-message.warning {
+    background: rgba(245,158,11,.1);
+    border-color: rgba(245,158,11,.3);
+    color: #fbbf24;
+  }
+  
+  .feedback-message.error {
+    background: rgba(239,68,68,.1);
+    border-color: rgba(239,68,68,.3);
+    color: #f87171;
+  }
+  
+  .pages-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 1rem;
+    margin: 1rem 0;
+  }
+  
+  .page-item {
+    padding: 1.5rem 1rem;
+    border-radius: 12px;
+    background: linear-gradient(135deg, rgba(255,255,255,.05), rgba(255,255,255,.02));
+    border: 1px solid rgba(255,255,255,.1);
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    color: #fff;
+    font-weight: 700;
+    font-size: 1.1rem;
+    text-decoration: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .page-item:hover {
+    transform: translateY(-2px);
+    background: linear-gradient(135deg, rgba(255,255,255,.1), rgba(255,255,255,.05));
+    border-color: rgba(255,255,255,.2);
+    box-shadow: 0 8px 25px rgba(0,0,0,.15);
+  }
+  
+  .page-number {
+    font-size: 1.5rem;
+    font-weight: 900;
+    color: #22c55e;
+  }
+  
+  .page-label {
+    font-size: 0.9rem;
+    opacity: 0.9;
+  }
+  
+  .btn {
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    border: none;
+    font-weight: 700;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  
+  .btn-primary {
+    background: linear-gradient(135deg, #22c55e, #16a34a);
+    color: #fff;
+    box-shadow: 0 4px 12px rgba(34,197,94,.3);
+  }
+  
+  .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(34,197,94,.4);
+  }
+  
+  .btn-outline {
+    background: transparent;
+    color: #fff;
+    border: 2px solid rgba(255,255,255,.3);
+  }
+  
+  .btn-outline:hover {
+    background: rgba(255,255,255,.1);
+    border-color: rgba(255,255,255,.5);
+  }
+  
+  .no-pages-message {
+    padding: 2rem;
+    text-align: center;
+    color: rgba(255,255,255,.7);
+    background: rgba(255,255,255,.03);
+    border-radius: 12px;
+    border: 1px solid rgba(255,255,255,.1);
+  }
+  
+  .no-pages-message h3 {
+    margin: 0 0 1rem 0;
+    color: #f87171;
+    font-weight: 700;
+  }
+  
+  .no-pages-message p {
+    margin: 0;
+    line-height: 1.6;
+  }
+  
+  /* معلومات الربع */
+  .quarter-info {
+    display: inline-block;
+    padding: 0.8rem 1.2rem;
+    background: linear-gradient(135deg, #3b82f6, #2563eb);
+    color: #fff;
+    border-radius: 10px;
+    font-weight: 700;
+    margin: 1rem 0;
+    text-align: center;
+  }
+  
+  .quarter-name {
+    font-size: 0.9rem;
+    opacity: 0.9;
+    margin-top: 0.3rem;
+    display: block;
+  }
+  
+  /* معلومات العبارة */
+  .phrase-info {
+    display: inline-block;
+    padding: 1rem 1.5rem;
+    background: linear-gradient(135deg, #22c55e, #16a34a);
+    color: #fff;
+    border-radius: 12px;
+    font-weight: 700;
+    margin: 1rem 0;
+    font-size: 1.1rem;
+    text-align: center;
+    max-width: 100%;
+    word-break: break-word;
+  }
+  
+  /* شريط تقدم المواضع */
+  .positions-tracker {
+    margin: 1.5rem 0;
+    padding: 1.2rem;
+    background: rgba(255,255,255,.03);
+    border-radius: 12px;
+    border: 1px solid rgba(255,255,255,.1);
+  }
+  
+  .positions-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    color: rgba(255,255,255,.9);
+    font-weight: 700;
+  }
+  
+  .positions-count {
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    color: #fff;
+    padding: 0.3rem 0.8rem;
+    border-radius: 20px;
+    font-size: 0.9rem;
+  }
+  
+  .positions-list {
+    display: flex;
+    gap: 0.8rem;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  
+  .position-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.8rem;
+    border-radius: 10px;
+    background: rgba(255,255,255,.05);
+    border: 1px solid rgba(255,255,255,.1);
+    min-width: 80px;
+    transition: all 0.3s ease;
+  }
+  
+  .position-item.current {
+    background: linear-gradient(135deg, #22c55e, #16a34a);
+    border-color: #22c55e;
+    box-shadow: 0 0 15px rgba(34,197,94,.3);
+  }
+  
+  .position-item.completed {
+    background: linear-gradient(135deg, #3b82f6, #2563eb);
+    border-color: #3b82f6;
+  }
+  
+  .position-number {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: rgba(255,255,255,.2);
+    border: 2px solid rgba(255,255,255,.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 900;
+    font-size: 0.8rem;
+    color: #fff;
+  }
+  
+  .position-item.current .position-number,
+  .position-item.completed .position-number {
+    background: rgba(255,255,255,.9);
+    color: #1b1b1b;
+    border-color: #fff;
+  }
+  
+  .position-label {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: rgba(255,255,255,.9);
+  }
+  
+  .position-status {
+    font-size: 0.7rem;
+    font-weight: 600;
+    opacity: 0.8;
+  }
+</style>
+
+<div class="page-shell">
+  <div class="header-card">
+    <h1>📖 صفحات الربع</h1>
+    <p>اختر الصفحة التي تريد العمل عليها.</p>
+    
+    {% if quarter_info %}
+    <div class="quarter-info">
+      <strong>الجزء {{ quarter_info.juz_no }}</strong> - 
+      <strong>الربع {{ quarter_info.quarter_index }}</strong>
+      {% if quarter_info.quarter_name %}
+        <br><span class="quarter-name">{{ quarter_info.quarter_name }}</span>
+      {% endif %}
+    </div>
+    {% endif %}
+    
+    {% if current_phrase %}
+    <div class="phrase-info">
+      "{{ current_phrase }}"
+    </div>
+    {% endif %}
+    
+    <!-- شريط تقدم المواضع -->
+    {% if positions_info %}
+    <div class="positions-tracker">
+      <div class="positions-header">
+        <span>المواضع المطلوبة:</span>
+        <span class="positions-count">{{ positions_info.total }} موضع</span>
+      </div>
+      <div class="positions-list">
+        {% for position in positions_info.positions %}
+        <div class="position-item {% if position.completed %}completed{% elif position.current %}current{% endif %}">
+          <span class="position-number">{{ forloop.counter }}</span>
+          <span class="position-label">الموضع {{ forloop.counter }}</span>
+          {% if position.completed %}
+            <span class="position-status">✓ مكتمل</span>
+          {% elif position.current %}
+            <span class="position-status">🔄 الحالي</span>
+          {% else %}
+            <span class="position-status">⏳ قادم</span>
+          {% endif %}
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  {% if feedback %}
+  <div class="feedback-message {{ feedback.type }}">
+    <strong>{{ feedback.title }}</strong>
+    {% if feedback.message %}
+      <br>{{ feedback.message }}
+    {% endif %}
+    {% if delta %}
+      <br><strong>{{ delta }}</strong>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  {% if pages %}
+  <div class="pages-grid">
+    {% for page in pages %}
+      <a href="{% url 'mushaf:quarter_pages' qid %}?page={{ page.number }}" class="page-item">
+        <div class="page-number">{{ page.number }}</div>
+        <div class="page-label">الصفحة</div>
+      </a>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="no-pages-message">
+    <h3>⚠️ لا توجد صفحات متاحة</h3>
+    <p>لا توجد صفحات في هذا الربع.</p>
+  </div>
+  {% endif %}
+  
+  <div style="text-align: center; margin-top: 2rem;">
+    <a href="{% url 'tests:similar_on_pages:selection' %}" class="btn btn-outline">العودة لاختيار الاختبار</a>
+    <a href="{% url 'core:main_menu' %}" class="btn btn-outline">العودة للرئيسية</a>
+  </div>
+</div>
+{% endblock %}

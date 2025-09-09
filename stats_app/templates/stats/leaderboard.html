@@ -1,0 +1,663 @@
+{% extends "core/base.html" %}
+{% load static i18n %}
+
+{% block title %}لوحة المنافسة — متواتر{% endblock %}
+
+{% block content %}
+<style>
+  .board-shell{min-height:72vh; display:grid; gap:1rem; align-content:start; overflow-x:hidden; padding:0 12px}
+  .head{
+    display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:.6rem;
+    padding:.9rem 1rem; border-radius:16px;
+    background:linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.015));
+    border:1px solid rgba(255,255,255,.10); box-shadow:0 14px 36px rgba(0,0,0,.22);
+  }
+  .head h1{margin:0; color:#fff; font-weight:900}
+  .head .info {
+    flex: 1;
+    margin: 0 1rem;
+  }
+  .head .info p {
+    margin: 0 0 0.5rem 0;
+    color: rgba(255,255,255,.8);
+    font-size: 0.9rem;
+    font-weight: 500;
+  }
+  
+  .accuracy-legend {
+    display: flex;
+    gap: 0.8rem;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  
+  .legend-item {
+    padding: 0.2rem 0.5rem;
+    border-radius: 8px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    border: 1px solid rgba(255,255,255,.2);
+  }
+  
+  .legend-item.excellent {
+    background: rgba(34,197,94,.2);
+    color: #4ade80;
+    border-color: rgba(34,197,94,.4);
+    box-shadow: 0 2px 8px rgba(34,197,94,.2);
+  }
+  
+  .legend-item.very-good {
+    background: rgba(59,130,246,.2);
+    color: #60a5fa;
+    border-color: rgba(59,130,246,.4);
+    box-shadow: 0 2px 8px rgba(59,130,246,.2);
+  }
+  
+  .legend-item.good {
+    background: rgba(16,185,129,.2);
+    color: #34d399;
+    border-color: rgba(16,185,129,.4);
+    box-shadow: 0 2px 8px rgba(16,185,129,.2);
+  }
+  
+  .legend-item.average {
+    background: rgba(245,158,11,.2);
+    color: #fbbf24;
+    border-color: rgba(245,158,11,.4);
+    box-shadow: 0 2px 8px rgba(245,158,11,.2);
+  }
+  
+  .legend-item.needs-improvement {
+    background: rgba(239,68,68,.2);
+    color: #f87171;
+    border-color: rgba(239,68,68,.4);
+    box-shadow: 0 2px 8px rgba(239,68,68,.2);
+  }
+  
+  /* ===== تحسينات إضافية للجدول ===== */
+  .table-wrap{
+    overflow:visible;
+    background:transparent;
+    border:0; border-radius:0; box-shadow:none;
+    position: static;
+  }
+  
+  .table-wrap::before {
+    content: "";
+    position: absolute;
+    top: -12px;
+    right: 20px;
+    background: transparent;
+    color: transparent;
+    padding: 0;
+    border-radius: 0;
+    font-size: 0;
+    font-weight: 0;
+    border: 0;
+    box-shadow: none;
+    z-index: 0;
+    animation: none;
+  }
+  
+  @keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+  }
+  
+  /* ===== تحسينات إضافية للصفوف ===== */
+  tbody tr {
+    transition: all 0.3s ease;
+    position: relative;
+  }
+  
+  tbody tr:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0,0,0,.15);
+  }
+
+  /* تم إزالة تطبيق الـ skins */
+
+  /* ===== صف الطالب نفسه ===== */
+  tbody tr.current-user-row {
+    position: relative;
+    background: linear-gradient(135deg, rgba(30,41,59,.8), rgba(51,65,85,.6));
+    border: 2px solid rgba(212,175,55,.4);
+  }
+
+  /* طبقة تعتيم إضافية للطالب نفسه */
+  tbody tr.current-user-row::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: -1;
+    background: rgba(0, 0, 0, 0.3);
+  }
+
+  /* تحسين النص للطالب نفسه */
+  tbody tr.current-user-row td {
+    position: relative;
+    z-index: 1;
+    color: #fff !important;
+    text-shadow: 0 2px 4px rgba(0,0,0,.8);
+    font-weight: 700;
+  }
+
+  tbody tr.current-user-row .player {
+    color: #fff !important;
+    text-shadow: 0 2px 4px rgba(0,0,0,.8);
+  }
+
+  tbody tr.current-user-row .rank {
+    background: rgba(255,255,255,.2) !important;
+    border: 1px solid rgba(255,255,255,.4) !important;
+    color: #fff !important;
+    text-shadow: 0 2px 4px rgba(0,0,0,.8);
+  }
+
+  /* تحسين الأيقونات والشارات للطالب نفسه */
+  tbody tr.current-user-row .accuracy-badge {
+    background: rgba(255,255,255,.2) !important;
+    border: 1px solid rgba(255,255,255,.4) !important;
+    color: #fff !important;
+    text-shadow: 0 2px 4px rgba(0,0,0,.8);
+  }
+
+  tbody tr.current-user-row .exams-count,
+  tbody tr.current-user-row .correct-cell,
+  tbody tr.current-user-row .wrong-cell,
+  tbody tr.current-user-row .unanswered-cell {
+    background: rgba(255,255,255,.15) !important;
+    border: 1px solid rgba(255,255,255,.3) !important;
+    color: #fff !important;
+    text-shadow: 0 2px 4px rgba(0,0,0,.8);
+  }
+
+  /* تأثير hover خاص للطالب نفسه */
+  tbody tr.current-user-row:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0,0,0,.3);
+  }
+
+  tbody tr.current-user-row:hover::after {
+    background: rgba(0, 0, 0, 0.2);
+  }
+
+  /* تم إزالة تحسين النص على الـ skins */
+  
+  /* ===== مؤشر الترتيب ===== */
+  /* تم إزالة الميداليات لتجنب مشاكل ترتيب الأعمدة */
+  /*
+  tbody tr:first-child::before {
+    content: "";
+    position: absolute;
+    right: -15px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 1.2rem;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,.3));
+  }
+  
+  tbody tr:nth-child(2)::before {
+    content: "";
+    position: absolute;
+    right: -15px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 1.2rem;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,.3));
+  }
+  
+  tbody tr:nth-child(3)::before {
+    content: "";
+    position: absolute;
+    right: -15px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 1.2rem;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,.3));
+  }
+  */
+  table{width:100%; border-collapse:separate; border-spacing:0; table-layout:fixed; max-width:100%}
+  thead th{
+    text-align:center; color:#e7efe9; font-weight:900; padding:1rem .8rem; position:sticky; top:0; background:#071510; font-size:1rem;
+  }
+  tbody td{padding:.9rem .8rem; border-top:1px solid rgba(255,255,255,.07); text-align:center; color:#e9f5ef; font-size:1rem; word-wrap:break-word; overflow:hidden}
+  .player{
+    display:flex; gap:.4rem; align-items:center; justify-content:flex-start; color:#fff; font-weight:800; max-width:100%; overflow:hidden;
+  }
+  
+  .player-link {
+    text-decoration: none;
+    color: inherit;
+    transition: all 0.3s ease;
+  }
+  
+  .player-link:hover {
+    transform: translateY(-1px);
+    filter: brightness(1.1);
+  }
+  .avatar{width:36px; height:36px; border-radius:50%; overflow:hidden; background:#0b1713; display:inline-grid; place-items:center; border:1px solid rgba(255,255,255,.12); flex-shrink:0}
+  .avatar img{width:100%; height:100%; object-fit:cover; display:block}
+  .rank{
+    font-weight:900; width:2.8rem; text-align:center; border-radius:999px; padding:.25rem .45rem; margin-inline:auto;
+    background:#0b1713; border:1px solid rgba(255,255,255,.12); color:#fff;
+  }
+  .r1{background:linear-gradient(135deg,#ffe08a,#e7b200); color:#1b1b1b}
+  .r2{background:linear-gradient(135deg,#e6e9ef,#9aa3b2); color:#1b1b1b}
+  .r3{background:linear-gradient(135deg,#ffd2a6,#b66a28); color:#1b1b1b}
+  .badge{margin-inline-start:.35rem}
+  .t-center{text-align:center}
+  
+  /* ===== ألوان الدقة ===== */
+  .accuracy-badge {
+    display: inline-block;
+    padding: 0.3rem 0.6rem;
+    border-radius: 12px;
+    font-weight: 700;
+    font-size: 0.85rem;
+    min-width: 3.5rem;
+    text-align: center;
+    border: 1px solid rgba(255,255,255,.2);
+    box-shadow: 0 2px 8px rgba(0,0,0,.15);
+  }
+  
+  .accuracy-badge.excellent {
+    background: linear-gradient(135deg, rgba(34,197,94,.9), rgba(34,197,94,.7));
+    color: #fff;
+    border-color: rgba(34,197,94,.4);
+  }
+  
+  .accuracy-badge.very-good {
+    background: linear-gradient(135deg, rgba(59,130,246,.9), rgba(59,130,246,.7));
+    color: #fff;
+    border-color: rgba(59,130,246,.4);
+  }
+  
+  .accuracy-badge.good {
+    background: linear-gradient(135deg, rgba(16,185,129,.9), rgba(16,185,129,.7));
+    color: #fff;
+    border-color: rgba(16,185,129,.4);
+  }
+  
+  .accuracy-badge.average {
+    background: linear-gradient(135deg, rgba(245,158,11,.9), rgba(245,158,11,.7));
+    color: #fff;
+    border-color: rgba(245,158,11,.4);
+  }
+  
+  .accuracy-badge.needs-improvement {
+    background: linear-gradient(135deg, rgba(239,68,68,.9), rgba(239,68,68,.7));
+    color: #fff;
+    border-color: rgba(239,68,68,.4);
+  }
+  
+  .accuracy-icon {
+    margin-inline-start: 0.3rem;
+    font-size: 0.8rem;
+    opacity: 0.9;
+  }
+  
+  /* ===== تنسيق الصفوف ===== */
+  tbody tr {
+    transition: all 0.3s ease;
+    position: relative;
+    background: transparent;
+  }
+  
+  tbody tr:hover {
+    background: rgba(255,255,255,.05) !important;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0,0,0,.15);
+  }
+  
+  /* ===== إلغاء الخلفية المتداخلة للصفوف الفردية ===== */
+  tbody tr:nth-child(odd) {
+    background: transparent !important;
+  }
+  
+  /* ===== تنسيق موحد للصفوف ===== */
+  tbody tr {
+    background: transparent;
+  }
+  
+  /* ===== تنسيق الصفوف ===== */
+  tbody tr {
+    transition: all 0.3s ease;
+    position: relative;
+    background: transparent;
+  }
+  
+  tbody tr:hover {
+    background: rgba(255,255,255,.05) !important;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0,0,0,.15);
+  }
+  
+  /* ===== مؤشر الترتيب ===== */
+  /* تم إزالة الميداليات لتجنب مشاكل ترتيب الأعمدة */
+  /*
+  tbody tr:first-child::before {
+    content: "🥇";
+    position: absolute;
+    left: -15px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 1.2rem;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,.3));
+  }
+  
+  tbody tr:nth-child(2)::before {
+    content: "🥈";
+    position: absolute;
+    left: -15px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 1.2rem;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,.3));
+  }
+  
+  tbody tr:nth-child(3)::before {
+    content: "🥉";
+    position: absolute;
+    left: -15px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 1.2rem;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,.3));
+  }
+  */
+  
+  /* ===== تمييز الصفوف ذات الدقة العالية ===== */
+  tbody tr:first-child {
+    background: linear-gradient(90deg, rgba(34,197,94,.1), rgba(34,197,94,.05)) !important;
+    border-left: 3px solid #22c55e;
+    box-shadow: 0 0 20px rgba(34,197,94,.2);
+  }
+  
+  tbody tr:nth-child(2) {
+    background: linear-gradient(90deg, rgba(59,130,246,.1), rgba(59,130,246,.05)) !important;
+    border-left: 3px solid #3b82f6;
+    box-shadow: 0 0 15px rgba(59,130,246,.2);
+  }
+  
+  tbody tr:nth-child(3) {
+    background: linear-gradient(90deg, rgba(16,185,129,.1), rgba(16,185,129,.05)) !important;
+    border-left: 3px solid #10b981;
+    box-shadow: 0 0 10px rgba(16,185,129,.2);
+  }
+  
+  .score-cell {
+    font-weight: 900;
+    color: #d4af37;
+    text-shadow: 0 0 10px rgba(212,175,55,.3);
+  }
+  
+  /* ===== تنسيق عدد الامتحانات ===== */
+  .exams-count {
+    font-weight: 700;
+    color: #10b981;
+    background: rgba(16,185,129,.1);
+    padding: 0.2rem 0.5rem;
+    border-radius: 8px;
+    border: 1px solid rgba(16,185,129,.3);
+    display: inline-block;
+    min-width: 1.5rem;
+    text-align: center;
+  }
+  
+  .no-exams {
+    color: rgba(255,255,255,.5);
+    font-style: italic;
+  }
+  
+  /* ===== تنسيق الأعمدة المختلفة ===== */
+  .correct-cell {
+    font-weight: 700;
+    color: #10b981;
+    background: rgba(16,185,129,.1);
+    border-radius: 8px;
+    padding: 0.2rem 0.5rem;
+    text-align: center;
+  }
+  
+  .wrong-cell {
+    font-weight: 700;
+    color: #ef4444;
+    background: rgba(239,68,68,.1);
+    border-radius: 8px;
+    padding: 0.2rem 0.5rem;
+    text-align: center;
+  }
+  
+  .unanswered-cell {
+    font-weight: 700;
+    color: #f59e0b;
+    background: rgba(245,158,11,.1);
+    border-radius: 8px;
+    padding: 0.2rem 0.5rem;
+    text-align: center;
+  }
+  
+  /* ===== تحسين عرض الجدول ===== */
+  table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    table-layout: fixed;
+  }
+  
+  /* تحديد عرض الأعمدة */
+  th:nth-child(1), td:nth-child(1) { width: 8%; } /* الترتيب */
+  th:nth-child(2), td:nth-child(2) { width: 25%; } /* الطالب */
+  th:nth-child(3), td:nth-child(3) { width: 12%; } /* النقاط */
+  th:nth-child(4), td:nth-child(4) { width: 12%; } /* الامتحانات */
+  th:nth-child(5), td:nth-child(5) { width: 10%; } /* صحيح */
+  th:nth-child(6), td:nth-child(6) { width: 10%; } /* خطأ */
+  th:nth-child(7), td:nth-child(7) { width: 10%; } /* غير مجاب */
+  th:nth-child(8), td:nth-child(8) { width: 13%; } /* الدقة */
+  
+  thead th {
+    text-align: center;
+    color: #e7efe9;
+    font-weight: 900;
+    padding: 1rem 0.8rem;
+    position: sticky;
+    top: 0;
+    background: #071510;
+    font-size: 1rem;
+    border-bottom: 2px solid rgba(255,255,255,.1);
+  }
+  
+  tbody td {
+    padding: 0.9rem 0.8rem;
+    border-top: 1px solid rgba(255,255,255,.07);
+    text-align: center;
+    color: #e9f5ef;
+    font-size: 1rem;
+    vertical-align: middle;
+  }
+  
+  /* ===== تمييز عمود الدقة ===== */
+  thead th:last-child {
+    background: linear-gradient(135deg, #071510, #0a1f18) !important;
+    border: 1px solid rgba(34,197,94,.3);
+    color: #4ade80 !important;
+    position: relative;
+  }
+  
+  /* تم إزالة الميدالية لتجنب مشاكل ترتيب الأعمدة */
+  /*
+  thead th:last-child::after {
+    content: "🏆";
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    font-size: 0.8rem;
+    opacity: 0.8;
+  }
+  */
+  
+  /* ===== تنسيقات الشاشات الصغيرة ===== */
+  @media (max-width: 768px) {
+    .avatar {
+      width: 24px !important;
+      height: 24px !important;
+    }
+    
+    .player {
+      gap: 0.3rem !important;
+      font-size: 0.9rem !important;
+    }
+    
+    tbody td {
+      padding: 0.6rem 0.4rem !important;
+      font-size: 0.9rem !important;
+    }
+    
+    thead th {
+      padding: 0.8rem 0.4rem !important;
+      font-size: 0.9rem !important;
+    }
+    
+    /* تعديل عرض الأعمدة للشاشات الصغيرة */
+    th:nth-child(1), td:nth-child(1) { width: 10%; }
+    th:nth-child(2), td:nth-child(2) { width: 30%; }
+    th:nth-child(3), td:nth-child(3) { width: 15%; }
+    th:nth-child(4), td:nth-child(4) { width: 15%; }
+    th:nth-child(5), td:nth-child(5) { width: 10%; }
+    th:nth-child(6), td:nth-child(6) { width: 10%; }
+    th:nth-child(7), td:nth-child(7) { width: 10%; }
+    th:nth-child(8), td:nth-child(8) { width: 0%; display: none; } /* إخفاء عمود الدقة في الشاشات الصغيرة */
+  }
+  
+  @media (max-width: 480px) {
+    .avatar {
+      width: 20px !important;
+      height: 20px !important;
+    }
+    
+    .player {
+      gap: 0.25rem !important;
+      font-size: 0.8rem !important;
+    }
+    
+    tbody td {
+      padding: 0.5rem 0.3rem !important;
+      font-size: 0.8rem !important;
+    }
+    
+    thead th {
+      padding: 0.6rem 0.3rem !important;
+      font-size: 0.8rem !important;
+    }
+  }
+</style>
+
+<div class="board-shell">
+  <div class="head">
+    <h1>🏆 لوحة المنافسة - الترتيب بالدقة</h1>
+         <div class="info">
+       <p><strong>🏆 الترتيب بناءً على الدقة:</strong> الدقة الأعلى تأتي أولاً، ثم عدد الإجابات الصحيحة</p>
+       <p>النقاط تُحسب بناءً على: الدقة (80%) + الإجابات الصحيحة + عدد الامتحانات</p>
+       <div class="accuracy-legend">
+         <span class="legend-item excellent">🥇 90%+ ممتاز</span>
+         <span class="legend-item very-good">🥈 80%+ جيد جداً</span>
+         <span class="legend-item good">🥉 70%+ جيد</span>
+         <span class="legend-item average">60%+ متوسط</span>
+         <span class="legend-item needs-improvement">أقل من 60%</span>
+       </div>
+     </div>
+    <div class="actions">
+      <a href="{% url 'core:main_menu' %}" class="btn btn-outline">الرجوع للرئيسية</a>
+    </div>
+  </div>
+
+  <div class="table-wrap">
+    <table dir="rtl">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>الطالب</th>
+          <th>النقاط</th>
+          <th>الامتحانات</th>
+          <th>صحيح</th>
+          <th>خطأ</th>
+          <th>غير مُجاب</th>
+          <th>الدقة ⭐</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in rows %}
+        <!-- تشخيص: عرض البيانات للتأكد من الترتيب -->
+        <!-- DEBUG: {{ r.rank }} | {{ r.display_name }} | {{ r.score }} | {{ r.exams }} | {{ r.correct }} | {{ r.wrong }} | {{ r.unanswered }} | {{ r.accuracy_pct }} | Skin: {{ r.skin }} -->
+        
+        <tr {% if r.student_id == student.id %}class="current-user-row"{% endif %}>
+          <!-- عمود الترتيب -->
+          <td>
+            <span class="rank {% if r.rank == 1 %}r1{% elif r.rank == 2 %}r2{% elif r.rank == 3 %}r3{% endif %}">
+              {% if r.rank == 1 %}🥇{% elif r.rank == 2 %}🥈{% elif r.rank == 3 %}🥉{% else %}{{ r.rank }}{% endif %}
+            </span>
+          </td>
+          
+          <!-- عمود الطالب (الاسم والصورة) -->
+          <td>
+            <a href="{% url 'stats_app:student_profile' r.student_id %}" class="player-link">
+              <span class="player">
+                <span class="avatar">
+                  {% if r.avatar %}<img src="{{ r.avatar }}" alt="">{% else %}<span class="fallback">👤</span>{% endif %}
+                </span>
+                {{ r.display_name|truncatewords:1|cut:"…" }}
+              </span>
+            </a>
+          </td>
+          
+          <!-- عمود النقاط -->
+          <td class="score-cell">{{ r.score }}</td>
+          
+          <!-- عمود عدد الامتحانات -->
+          <td>
+            {% if r.exams and r.exams > 0 %}
+              <span class="exams-count">{{ r.exams }}</span>
+            {% else %}
+              <span class="no-exams">—</span>
+            {% endif %}
+          </td>
+          
+          <!-- عمود الأسئلة الصحيحة -->
+          <td class="correct-cell">{{ r.correct }}</td>
+          
+          <!-- عمود الأسئلة الخاطئة -->
+          <td class="wrong-cell">{{ r.wrong }}</td>
+          
+          <!-- عمود الأسئلة غير المجاب عليها -->
+          <td class="unanswered-cell">{{ r.unanswered }}</td>
+          
+          <!-- عمود الدقة -->
+          <td class="t-center">
+            {% if r.accuracy_pct is not None %}
+              <span class="accuracy-badge {% if r.accuracy_pct >= 90 %}excellent{% elif r.accuracy_pct >= 80 %}very-good{% elif r.accuracy_pct >= 70 %}good{% elif r.accuracy_pct >= 60 %}average{% else %}needs-improvement{% endif %}">
+                {{ r.accuracy_pct|floatformat:1 }}%
+                {% if r.accuracy_pct >= 90 %}
+                  <span class="accuracy-icon">⭐</span>
+                {% elif r.accuracy_pct >= 80 %}
+                  <span class="accuracy-icon">✨</span>
+                {% elif r.accuracy_pct >= 70 %}
+                  <span class="accuracy-icon">💫</span>
+                {% endif %}
+              </span>
+            {% else %}
+              <span class="accuracy-badge" style="background:rgba(255,255,255,.06); color:#e5e7eb; border-color:rgba(255,255,255,.15)">—</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="8" class="t-center">لا توجد بيانات بعد.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

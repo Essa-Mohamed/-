@@ -1,0 +1,582 @@
+{% load i18n static %}<!doctype html><html lang="{{ LANGUAGE_CODE|default:'ar' }}" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>{% block title %}متواتر{% endblock %}</title><link rel="stylesheet" href="{% static 'css/mutawatir.css' %}">{% block extra_css %}{% endblock %}<style>.btn{display:inline-flex;align-items:center;contain:layout paint;position:relative;overflow:hidden;transition:transform .12s,box-shadow .22s,background-color .22s,border-color .22s;will-change:transform}.badge-alpha{display:inline-block;margin-inline-start:.5rem;padding:.15rem .5rem;font-size:.75rem;border-radius:.5rem;border:1px solid #d9b44a;background:#fffbea;color:#8a6d1d;vertical-align:middle;white-space:nowrap}.topbar .container.row{display:flex;align-items:center;justify-content:space-between}.brand,.actions{display:flex;align-items:center}.actions{gap:.6rem;margin-inline-start:auto}.brand-link{display:flex;align-items:center;gap:.6rem;text-decoration:none}.brand-logo{width:42px;height:42px}.brand-text .brand-name-ar{font-size:1.18rem;font-weight:900;color:#fff}.brand-text .brand-name-en{font-size:.9rem;opacity:.9;color:#f1cf6b}.nav-welcome{display:inline-flex;align-items:center;gap:.45rem;direction:rtl;font-weight:800;color:#1b1b1b;background:linear-gradient(135deg,var(--accent,#f1cf6b),var(--accent-2,#f3e4a8));padding:.32rem .6rem;border-radius:999px;border:1px solid rgba(212,175,55,.55);box-shadow:0 6px 18px rgba(0,0,0,.12);font-size:.92rem}.nav-welcome .dot{width:10px;height:10px;border-radius:50%;background:#16a34a;box-shadow:0 0 0 6px rgba(22,163,74,.15);animation:pulse 1.8s ease-in-out infinite}@keyframes pulse{0%,100%{box-shadow:0 0 0 6px rgba(22,163,74,.15)}50%{box-shadow:0 0 0 9px rgba(22,163,74,.30)}}.user-cluster{position:relative;display:flex;align-items:center;gap:.6rem}.user-trigger{display:flex;align-items:center;gap:.5rem;background:transparent;border:0;cursor:pointer;padding:.25rem .4rem;border-radius:12px}.user-trigger:focus-visible{outline:none;box-shadow:0 0 0 3px rgba(241,207,107,.35)}.avatar{width:40px;height:40px;border-radius:50%;overflow:hidden;background:#0f1118;border:1px solid rgba(255,255,255,.1);display:inline-grid;place-items:center}.avatar img{width:100%;height:100%;object-fit:cover;display:block}.avatar-fallback{width:100%;height:100%;display:grid;place-items:center}.avatar-fallback svg{width:72%;height:72%}.btn:hover{transform:translateY(-1px);box-shadow:0 10px 24px rgba(0,0,0,.18)}.btn:active{transform:translateY(0);box-shadow:0 6px 16px rgba(0,0,0,.16)}.btn:focus-visible{outline:none;box-shadow:0 0 0 3px rgba(241,207,107,.45),0 10px 24px rgba(0,0,0,.18)}.btn.btn-primary{background:linear-gradient(135deg,var(--accent,#f1cf6b),var(--accent-2,#f3e4a8));color:#0e1a14;border-color:rgba(212,175,55,.65);font-weight:900}.btn.btn-outline{background:transparent;color:var(--accent,#f1cf6b);border:1px solid var(--accent,#f1cf6b);font-weight:800}.score-hud{position:fixed;top:8px;inset-inline:0;display:grid;justify-content:center;z-index:9998;pointer-events:none}.score-hud__chip{pointer-events:auto;display:inline-flex;align-items:center;gap:.6rem;background:rgba(2,6,23,.78);color:#fff;border:1px solid rgba(255,255,255,.14);padding:.35rem .65rem;border-radius:999px;backdrop-filter:blur(6px);box-shadow:0 10px 24px rgba(0,0,0,.25)}.score-hud__label{opacity:.85;font-weight:700}.score-hud__value{font-weight:900;font-variant-numeric:tabular-nums}.score-hud__delta{font-weight:900;font-variant-numeric:tabular-nums;padding:.05rem .5rem;border-radius:999px;border:1px solid transparent;transform:translateY(-4px);opacity:0;transition:all .28s;white-space:nowrap}.score-hud__delta.show{transform:translateY(0);opacity:1}.score-hud__delta.pos{background:#052e16;border-color:#166534;color:#22c55e}.score-hud__delta.neg{background:#3f0610;border-color:#7f1d1d;color:#f87171}.feedback{margin:.5rem auto 0;padding:.6rem .8rem;border-radius:12px;border:1px solid transparent;font-weight:800;text-align:center;max-width:900px}.feedback--success{background:#052e16;border-color:#166534;color:#22c55e}.feedback--warning{background:#3b2905;border-color:#a16207;color:#fbbf24}.feedback--error{background:#3f0610;border-color:#7f1d1d;color:#f87171}.feedback--info{background:#0b1220;border-color:#1f2a44;color:#93c5fd}.splash-overlay.hide{opacity:0;pointer-events:none}
+
+/* ===== رسائل التنبيه المحسنة ===== */
+.toast-root {
+  position: fixed !important;
+  top: 20px !important;
+  right: 20px !important;
+  z-index: 9999 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 12px !important;
+  max-width: 400px !important;
+  pointer-events: none !important;
+}
+
+.toast {
+  position: relative !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 12px !important;
+  padding: 16px 20px !important;
+  border-radius: 16px !important;
+  font-weight: 700 !important;
+  font-size: 0.95rem !important;
+  line-height: 1.4 !important;
+  color: #fff !important;
+  border: 1px solid rgba(255,255,255,.2) !important;
+  box-shadow: 0 8px 32px rgba(0,0,0,.3), 0 4px 16px rgba(0,0,0,.2) !important;
+  backdrop-filter: blur(12px) !important;
+  transform: translateX(100%) !important;
+  opacity: 0 !important;
+  animation: toast-slide-in 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards !important;
+  pointer-events: auto !important;
+  word-wrap: break-word !important;
+  max-width: 100% !important;
+  background: linear-gradient(135deg, rgba(212,175,55,.7), rgba(212,175,55,.6)) !important;
+}
+
+.toast span {
+  flex: 1 !important;
+  margin: 0 !important;
+}
+
+.toast__close {
+  background: rgba(255,255,255,.15) !important;
+  border: none !important;
+  color: rgba(255,255,255,.8) !important;
+  font-size: 1.2rem !important;
+  font-weight: 900 !important;
+  cursor: pointer !important;
+  padding: 4px 8px !important;
+  border-radius: 8px !important;
+  transition: all .2s ease !important;
+  line-height: 1 !important;
+  min-width: 28px !important;
+  height: 28px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.toast__close:hover {
+  background: rgba(255,255,255,.25) !important;
+  color: #fff !important;
+  transform: scale(1.1) !important;
+}
+
+.toast__close:active {
+  transform: scale(0.95) !important;
+}
+
+/* أنواع الرسائل */
+.toast--success {
+  background: linear-gradient(135deg, rgba(34,197,94,.7), rgba(34,197,94,.6)) !important;
+  border-color: rgba(34,197,94,.4) !important;
+  box-shadow: 0 8px 32px rgba(34,197,94,.4), 0 4px 16px rgba(0,0,0,.3) !important;
+}
+
+.toast--error {
+  background: linear-gradient(135deg, rgba(239,68,68,.7), rgba(239,68,68,.6)) !important;
+  border-color: rgba(239,68,68,.4) !important;
+  box-shadow: 0 8px 32px rgba(239,68,68,.4), 0 4px 16px rgba(0,0,0,.3) !important;
+}
+
+.toast--warning {
+  background: linear-gradient(135deg, rgba(245,158,11,.7), rgba(245,158,11,.6)) !important;
+  border-color: rgba(245,158,11,.4) !important;
+  box-shadow: 0 8px 32px rgba(245,158,11,.4), 0 4px 16px rgba(0,0,0,.3) !important;
+}
+
+.toast--info {
+  background: linear-gradient(135deg, rgba(59,130,246,.7), rgba(59,130,246,.6)) !important;
+  border-color: rgba(59,130,246,.4) !important;
+  box-shadow: 0 8px 32px rgba(59,130,246,.4), 0 4px 16px rgba(0,0,0,.3) !important;
+}
+
+/* أنيميشن الرسائل */
+@keyframes toast-slide-in {
+  from {
+    transform: translateX(100%) !important;
+    opacity: 0 !important;
+  }
+  to {
+    transform: translateX(0) !important;
+    opacity: 1 !important;
+  }
+}
+
+@keyframes toast-out {
+  from {
+    transform: translateX(0) !important;
+    opacity: 1 !important;
+  }
+  to {
+    transform: translateX(100%) !important;
+    opacity: 0 !important;
+  }
+}
+
+/* ===== إجبار تطبيق التصميم ===== */
+#toast-root.toast-root {
+  position: fixed !important;
+  top: 20px !important;
+  right: 20px !important;
+  z-index: 9999 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 12px !important;
+  max-width: 400px !important;
+  pointer-events: none !important;
+}
+
+#toast-root .toast {
+  position: relative !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 12px !important;
+  padding: 16px 20px !important;
+  border-radius: 16px !important;
+  font-weight: 700 !important;
+  font-size: 0.95rem !important;
+  line-height: 1.4 !important;
+  color: #fff !important;
+  border: 1px solid rgba(255,255,255,.2) !important;
+  box-shadow: 0 8px 32px rgba(0,0,0,.3), 0 4px 16px rgba(0,0,0,.2) !important;
+  backdrop-filter: blur(12px) !important;
+  transform: translateX(100%) !important;
+  opacity: 0 !important;
+  animation: toast-slide-in 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards !important;
+  pointer-events: auto !important;
+  word-wrap: break-word !important;
+  max-width: 100% !important;
+  background: linear-gradient(135deg, rgba(212,175,55,.7), rgba(212,175,55,.6)) !important;
+}
+
+#toast-root .toast span {
+  flex: 1 !important;
+  margin: 0 !important;
+}
+
+#toast-root .toast .toast__close {
+  background: rgba(255,255,255,.15) !important;
+  border: none !important;
+  color: rgba(255,255,255,.8) !important;
+  font-size: 1.2rem !important;
+  font-weight: 900 !important;
+  cursor: pointer !important;
+  padding: 4px 8px !important;
+  border-radius: 8px !important;
+  transition: all .2s ease !important;
+  line-height: 1 !important;
+  min-width: 28px !important;
+  height: 28px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+#toast-root .toast .toast__close:hover {
+  background: rgba(255,255,255,.25) !important;
+  color: #fff !important;
+  transform: scale(1.1) !important;
+}
+
+#toast-root .toast .toast__close:active {
+  transform: scale(0.95) !important;
+}
+
+/* أنواع الرسائل */
+#toast-root .toast.toast--success {
+  background: linear-gradient(135deg, rgba(34,197,94,.7), rgba(34,197,94,.6)) !important;
+  border-color: rgba(34,197,94,.4) !important;
+  box-shadow: 0 8px 32px rgba(34,197,94,.4), 0 4px 16px rgba(0,0,0,.3) !important;
+}
+
+#toast-root .toast.toast--error {
+  background: linear-gradient(135deg, rgba(239,68,68,.7), rgba(239,68,68,.6)) !important;
+  border-color: rgba(239,68,68,.4) !important;
+  box-shadow: 0 8px 32px rgba(239,68,68,.4), 0 4px 16px rgba(0,0,0,.3) !important;
+}
+
+#toast-root .toast.toast--warning {
+  background: linear-gradient(135deg, rgba(245,158,11,.7), rgba(245,158,11,.6)) !important;
+  border-color: rgba(245,158,11,.4) !important;
+  box-shadow: 0 8px 32px rgba(245,158,11,.4), 0 4px 16px rgba(0,0,0,.3) !important;
+}
+
+#toast-root .toast.toast--info {
+  background: linear-gradient(135deg, rgba(59,130,246,.7), rgba(59,130,246,.6)) !important;
+  border-color: rgba(59,130,246,.4) !important;
+  box-shadow: 0 8px 32px rgba(59,130,246,.4), 0 4px 16px rgba(0,0,0,.3) !important;
+}
+
+/* ===== CSS إضافي لضمان التطبيق ===== */
+.toast-root {
+  position: fixed !important;
+  top: 20px !important;
+  right: 20px !important;
+  z-index: 9999 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 12px !important;
+  max-width: 400px !important;
+  pointer-events: none !important;
+}
+
+.toast {
+  position: relative !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 12px !important;
+  padding: 16px 20px !important;
+  border-radius: 16px !important;
+  font-weight: 700 !important;
+  font-size: 0.95rem !important;
+  line-height: 1.4 !important;
+  color: #fff !important;
+  border: 1px solid rgba(255,255,255,.2) !important;
+  box-shadow: 0 8px 32px rgba(0,0,0,.3), 0 4px 16px rgba(0,0,0,.2) !important;
+  backdrop-filter: blur(12px) !important;
+  transform: translateX(100%) !important;
+  opacity: 0 !important;
+  animation: toast-slide-in 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards !important;
+  pointer-events: auto !important;
+  word-wrap: break-word !important;
+  max-width: 100% !important;
+  background: linear-gradient(135deg, rgba(212,175,55,.7), rgba(212,175,55,.6)) !important;
+}
+
+.toast span {
+  flex: 1 !important;
+  margin: 0 !important;
+}
+
+.toast__close {
+  background: rgba(255,255,255,.15) !important;
+  border: none !important;
+  color: rgba(255,255,255,.8) !important;
+  font-size: 1.2rem !important;
+  font-weight: 900 !important;
+  cursor: pointer !important;
+  padding: 4px 8px !important;
+  border-radius: 8px !important;
+  transition: all .2s ease !important;
+  line-height: 1 !important;
+  min-width: 28px !important;
+  height: 28px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.toast__close:hover {
+  background: rgba(255,255,255,.25) !important;
+  color: #fff !important;
+  transform: scale(1.1) !important;
+}
+
+.toast__close:active {
+  transform: scale(0.95) !important;
+}
+
+/* أنواع الرسائل */
+.toast--success {
+  background: linear-gradient(135deg, rgba(34,197,94,.7), rgba(34,197,94,.6)) !important;
+  border-color: rgba(34,197,94,.4) !important;
+  box-shadow: 0 8px 32px rgba(34,197,94,.4), 0 4px 16px rgba(0,0,0,.3) !important;
+}
+
+.toast--error {
+  background: linear-gradient(135deg, rgba(239,68,68,.7), rgba(239,68,68,.6)) !important;
+  border-color: rgba(239,68,68,.4) !important;
+  box-shadow: 0 8px 32px rgba(239,68,68,.4), 0 4px 16px rgba(0,0,0,.3) !important;
+}
+
+.toast--warning {
+  background: linear-gradient(135deg, rgba(245,158,11,.7), rgba(245,158,11,.6)) !important;
+  border-color: rgba(245,158,11,.4) !important;
+  box-shadow: 0 8px 32px rgba(245,158,11,.4), 0 4px 16px rgba(0,0,0,.3) !important;
+}
+
+.toast--info {
+  background: linear-gradient(135deg, rgba(59,130,246,.7), rgba(59,130,246,.6)) !important;
+  border-color: rgba(59,130,246,.4) !important;
+  box-shadow: 0 8px 32px rgba(59,130,246,.4), 0 4px 16px rgba(0,0,0,.3) !important;
+}
+
+@keyframes toast-out-old {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+}
+
+/* إصلاح مشكلة الإشعارات */
+.sr-only {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+/* ضمان ظهور الإشعارات */
+#toast-root {
+  position: fixed !important;
+  top: 20px !important;
+  right: 20px !important;
+  z-index: 99999 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 12px !important;
+  max-width: 400px !important;
+  pointer-events: none !important;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
+}
+
+/* إجبار ظهور الإشعارات */
+.toast-root {
+  position: fixed !important;
+  top: 20px !important;
+  right: 20px !important;
+  z-index: 99999 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 12px !important;
+  max-width: 400px !important;
+  pointer-events: none !important;
+}
+
+/* إجبار ظهور الإشعارات الفردية */
+.toast {
+  position: relative !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 12px !important;
+  padding: 16px 20px !important;
+  border-radius: 16px !important;
+  font-weight: 700 !important;
+  font-size: 0.95rem !important;
+  line-height: 1.4 !important;
+  color: #fff !important;
+  border: 1px solid rgba(255,255,255,.2) !important;
+  box-shadow: 0 8px 32px rgba(0,0,0,.3), 0 4px 16px rgba(0,0,0,.2) !important;
+  backdrop-filter: blur(12px) !important;
+  transform: translateX(0) !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  word-wrap: break-word !important;
+  max-width: 100% !important;
+  background: linear-gradient(135deg, rgba(212,175,55,.7), rgba(212,175,55,.6)) !important;
+  margin-bottom: 12px !important;
+}
+
+/* ألوان الإشعارات */
+.toast--success {
+  background: linear-gradient(135deg, rgba(34,197,94,.7), rgba(34,197,94,.6)) !important;
+  border-color: rgba(34,197,94,.4) !important;
+  box-shadow: 0 8px 32px rgba(34,197,94,.4), 0 4px 16px rgba(0,0,0,.3) !important;
+}
+
+.toast--error {
+  background: linear-gradient(135deg, rgba(239,68,68,.7), rgba(239,68,68,.6)) !important;
+  border-color: rgba(239,68,68,.4) !important;
+  box-shadow: 0 8px 32px rgba(239,68,68,.4), 0 4px 16px rgba(0,0,0,.3) !important;
+}
+
+.toast--warning {
+  background: linear-gradient(135deg, rgba(245,158,11,.7), rgba(245,158,11,.6)) !important;
+  border-color: rgba(245,158,11,.4) !important;
+  box-shadow: 0 8px 32px rgba(245,158,11,.4), 0 4px 16px rgba(0,0,0,.3) !important;
+}
+
+.toast--info {
+  background: linear-gradient(135deg, rgba(59,130,246,.7), rgba(59,130,246,.6)) !important;
+  border-color: rgba(59,130,246,.4) !important;
+  box-shadow: 0 8px 32px rgba(59,130,246,.4), 0 4px 16px rgba(0,0,0,.3) !important;
+}
+
+#toast-root .toast {
+  position: relative !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 12px !important;
+  padding: 16px 20px !important;
+  border-radius: 16px !important;
+  font-weight: 700 !important;
+  font-size: 0.95rem !important;
+  line-height: 1.4 !important;
+  color: #fff !important;
+  border: 1px solid rgba(255,255,255,.2) !important;
+  box-shadow: 0 8px 32px rgba(0,0,0,.3), 0 4px 16px rgba(0,0,0,.2) !important;
+  backdrop-filter: blur(12px) !important;
+  transform: translateX(0) !important;
+  opacity: 1 !important;
+  animation: toast-slide-in 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards !important;
+  pointer-events: auto !important;
+  word-wrap: break-word !important;
+  max-width: 100% !important;
+  background: linear-gradient(135deg, rgba(212,175,55,.7), rgba(212,175,55,.6)) !important;
+}
+
+/* زر الإغلاق */
+.toast__close {
+  background: rgba(255,255,255,.15) !important;
+  border: none !important;
+  color: rgba(255,255,255,.8) !important;
+  font-size: 1.2rem !important;
+  font-weight: 900 !important;
+  cursor: pointer !important;
+  padding: 4px 8px !important;
+  border-radius: 8px !important;
+  transition: all .2s ease !important;
+  line-height: 1 !important;
+  min-width: 28px !important;
+  height: 28px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.toast__close:hover {
+  background: rgba(255,255,255,.25) !important;
+  color: #fff !important;
+  transform: scale(1.1) !important;
+}
+
+.toast__close:active {
+  transform: scale(0.95) !important;
+}
+</style></head><body><header class="topbar"><div class="container row"><div class="brand"><a href="{% if request.user.is_authenticated %}{% url 'core:main_menu' %}{% else %}{% url 'core:landing' %}{% endif %}" class="brand-link" aria-label="Mutawatir Home"><img src="{% static 'img/logo.png' %}" srcset="{% static 'img/logo.png' %} 1x, {% static 'img/logo@2x.png' %} 2x" class="brand-logo" alt="Mutawatir Logo"><span class="brand-text"><span class="brand-name-ar">متواتر</span><span class="brand-name-en">Mutawatir</span></span>{% if IS_ALPHA %}<span class="badge-alpha" title="نسخة أولية قيد التطوير">{{ APP_VERSION }}</span>{% endif %}</a></div><nav class="actions">{% if request.user.is_authenticated %}<div class="user-cluster"><span class="nav-welcome" dir="rtl"><span class="dot" aria-hidden="true"></span>مرحبًا، {{ student.display_name|default:request.user.username|truncatewords:1|cut:"…" }}</span></span><button type="button" class="user-trigger" id="userMenuBtn" aria-expanded="false"><span class="avatar" aria-hidden="true">{% if student and student.avatar %}<img src="{{ student.avatar.url }}" alt="">{% else %}<span class="avatar-fallback" aria-hidden="true"><svg viewBox="0 0 24 24" role="img" aria-label="user"><path d="M12 12c2.761 0 5-2.686 5-6s-2.239-6-5-6-5 2.686-5 6 2.239 6 5 6zm0 2c-4.418 0-8 2.239-8 5v1h16v-1c0-2.761-3.582-5-8-5z" fill="#9aa3b2"/></svg></span>{% endif %}</span><span class="caret" aria-hidden="true"></span></button>{% url 'core:account_settings' as account_url %}<div class="user-menu" id="userMenu" hidden><a href="{% url 'core:main_menu' %}" class="menu-item">الصفحة الرئيسية</a><a href="{% url 'core:complaint' %}" class="menu-item">الإبلاغ / اقتراح</a>{% if account_url %}<a href="{{ account_url }}" class="menu-item">إعدادات الحساب</a>{% endif %}<a href="{% url 'stats_app:stats' %}" class="menu-item">إحصائياتك</a><a href="{% url 'core:logout' %}" class="menu-item">تسجيل الخروج</a></div></div>{% else %}<a class="btn btn-outline" href="{% url 'core:login' %}">{% trans "تسجيل الدخول" %}</a><a class="btn btn-primary" href="{% url 'core:signup' %}">{% trans "إنشاء حساب" %}</a>{% endif %}<form method="post" action="{% url 'set_language' %}" class="lang-form">{% csrf_token %}<select name="language" onchange="this.form.submit()" class="input small"><option value="ar" {% if LANGUAGE_CODE == 'ar' %}selected{% endif %}>العربية</option><option value="en" {% if LANGUAGE_CODE == 'en' %}selected{% endif %}>English</option></select><input type="hidden" name="next" value="{{ request.get_full_path }}"></form></nav></div></header>{% if show_score_hud %}<div id="score-hud" class="score-hud" data-score="{{ score|default:0 }}"{% if score_delta is not None %} data-delta="{{ score_delta }}"{% endif %}><div class="score-hud__chip"><span class="score-hud__label">نتيجتك</span><span class="score-hud__value" id="scoreValue">{{ score|default:0 }}</span><span class="score-hud__delta" id="scoreDelta" hidden></span></div></div>{% endif %}{% if not suppress_toasts %}<div id="toast-root" class="toast-root" aria-live="polite" aria-atomic="true"></div>{% if messages %}<div id="server-messages" class="sr-only">{% for message in messages %}<div data-level="{{ message.tags|default:'info' }}">{{ message }}</div>{% endfor %}</div>{% endif %}{% endif %}<main class="container">{% block content %}{% endblock %}</main>{% if not hide_footer %}<footer class="footer"><div class="container"><div class="muted">© متواتر — جميع الحقوق محفوظة{% if IS_ALPHA %}<span class="sep"> • </span><small>نسخة أولية قيد التطوير</small>{% endif %}</div></div></footer>{% endif %}{% if show_splash %}<section id="splash" class="splash-overlay" role="status" aria-live="polite"><div class="splash-card"><div class="splash-logo-wrap"><img src="{% static 'img/logo.png' %}" srcset="{% static 'img/logo.png' %} 1x, {% static 'img/logo@2x.png' %} 2x" alt="Mutawatir" class="splash-logo"></div><div class="splash-text"><blockquote class="hadith"><span class="qmark">«</span>خيرُكم من تعلَّم القرآن وعلَّمه<span class="qmark">»</span></blockquote><div class="hadith-src">— رواه البخاري</div></div></div></section><script>document.addEventListener('DOMContentLoaded',function(){const s=document.getElementById('splash');if(!s)return;requestAnimationFrame(()=>s.classList.add('show'));setTimeout(()=>{s.classList.add('hide');s.style.pointerEvents='none';setTimeout(()=>s.remove(),420)},1600)});</script>{% endif %}<script>document.addEventListener('click',function(e){const btn=e.target.closest('.btn');if(!btn)return;if(btn.tagName==='A'&&!btn.hasAttribute('data-ripple'))return;if(window.matchMedia('(prefers-reduced-motion: reduce)').matches)return;const rect=btn.getBoundingClientRect(),size=Math.max(rect.width,rect.height),r=document.createElement('span');r.className='ripple';r.style.position='absolute';r.style.width=r.style.height=size+'px';r.style.left=(e.clientX-rect.left-size/2)+'px';r.style.top=(e.clientY-rect.top-size/2)+'px';btn.appendChild(r);setTimeout(()=>r.remove(),500);},false);(function(){const hud=document.getElementById('score-hud');if(!hud)return;const val=document.getElementById('scoreValue'),d=document.getElementById('scoreDelta'),s=parseInt(hud.getAttribute('data-score')||'0',10),delta=hud.hasAttribute('data-delta')?parseInt(hud.getAttribute('data-delta')||'0',10):0;val.textContent=isNaN(s)?'0':String(s);if(!isNaN(delta)&&delta!==0){d.textContent=(delta>0?'+':'')+delta;d.classList.toggle('pos',delta>0);d.classList.toggle('neg',delta<0);d.hidden=false;requestAnimationFrame(()=>d.classList.add('show'));setTimeout(()=>{d.classList.remove('show');setTimeout(()=>{d.hidden=true},280)},1500);}})();{% if not suppress_toasts %}
+(function(){
+    const wrap = document.getElementById('toast-root');
+    const src = document.getElementById('server-messages');
+    
+    if (!wrap) {
+        console.error('Toast root not found');
+        return;
+    }
+    
+    if (!src) {
+        console.log('No server messages found');
+        return;
+    }
+    
+    const levelClass = l => !l ? 'toast--info' : 
+        l.includes('success') ? 'toast--success' : 
+        l.includes('error') ? 'toast--error' : 
+        l.includes('warning') ? 'toast--warning' : 'toast--info';
+    
+    const show = (text, lvl = 'info', t = 4000) => {
+        console.log('Creating toast:', text, lvl);
+        const el = document.createElement('div');
+        el.className = 'toast ' + levelClass(lvl);
+        el.innerHTML = '<span>' + text + '</span><button class="toast__close" aria-label="إغلاق" title="إغلاق">&times;</button>';
+        wrap.appendChild(el);
+        console.log('Toast added to DOM');
+        
+        const close = () => {
+            el.style.animation = 'toast-out 0.4s ease forwards';
+            setTimeout(() => {
+                if (el.parentNode) {
+                    el.parentNode.removeChild(el);
+                }
+            }, 400);
+        };
+        
+        el.querySelector('.toast__close').addEventListener('click', close);
+        setTimeout(close, t);
+    };
+    
+    const messages = src.querySelectorAll('div[data-level]');
+    console.log('Found messages:', messages.length);
+    if (messages.length > 0) {
+        messages.forEach((el, i) => {
+            const lvl = el.getAttribute('data-level') || 'info';
+            const text = (el.textContent || '').trim();
+            console.log(`Message ${i}:`, text, 'Level:', lvl);
+            if (text) {
+                setTimeout(() => show(text, lvl), i * 350);
+            }
+        });
+    } else {
+        console.log('No messages found in server-messages');
+    }
+})();
+{% endif %}
+
+// إنشاء toast-root إذا لم تكن موجودة
+(function(){
+    if (!document.getElementById('toast-root')) {
+        const toastRoot = document.createElement('div');
+        toastRoot.id = 'toast-root';
+        toastRoot.className = 'toast-root';
+        toastRoot.setAttribute('aria-live', 'polite');
+        toastRoot.setAttribute('aria-atomic', 'true');
+        document.body.appendChild(toastRoot);
+        console.log('Toast root created');
+    }
+})();
+
+(function(){const btn=document.getElementById('userMenuBtn'),menu=document.getElementById('userMenu');if(!btn||!menu)return;btn.addEventListener('click',()=>{const open=!menu.hasAttribute('hidden');if(open){menu.setAttribute('hidden','');btn.setAttribute('aria-expanded','false')}else{menu.removeAttribute('hidden');btn.setAttribute('aria-expanded','true')}});document.addEventListener('click',e=>{if(!menu||menu.hasAttribute('hidden'))return;if(!e.target.closest('.user-cluster')){menu.setAttribute('hidden','');btn.setAttribute('aria-expanded','false')}})})();
+
+// دالة عامة لعرض الإشعارات
+window.showToast = function(message, type = 'info', duration = 4000) {
+    console.log('showToast called:', message, type);
+    let wrap = document.getElementById('toast-root');
+    if (!wrap) {
+        console.log('Creating toast-root element');
+        wrap = document.createElement('div');
+        wrap.id = 'toast-root';
+        wrap.className = 'toast-root';
+        wrap.setAttribute('aria-live', 'polite');
+        wrap.setAttribute('aria-atomic', 'true');
+        document.body.appendChild(wrap);
+    }
+    
+    const levelClass = l => !l ? 'toast--info' : 
+        l.includes('success') ? 'toast--success' : 
+        l.includes('error') ? 'toast--error' : 
+        l.includes('warning') ? 'toast--warning' : 'toast--info';
+    
+    const show = (text, lvl = 'info', t = 4000) => {
+        console.log('Creating toast:', text, lvl);
+        const el = document.createElement('div');
+        el.className = 'toast ' + levelClass(lvl);
+        el.innerHTML = '<span>' + text + '</span><button class="toast__close" aria-label="إغلاق" title="إغلاق">&times;</button>';
+        wrap.appendChild(el);
+        console.log('Toast added to DOM');
+        
+        const close = () => {
+            el.style.animation = 'toast-out 0.4s ease forwards';
+            setTimeout(() => {
+                if (el.parentNode) {
+                    el.parentNode.removeChild(el);
+                }
+            }, 400);
+        };
+        
+        el.querySelector('.toast__close').addEventListener('click', close);
+        setTimeout(close, t);
+    };
+    
+    show(message, type, duration);
+};
+
+
+
+</script>{% block extra_js %}{% endblock %}</body></html>

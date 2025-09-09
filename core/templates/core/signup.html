@@ -1,0 +1,654 @@
+{% extends "core/base.html" %}
+{% load static i18n %}
+
+{% block title %}إنشاء حساب — متواتر{% endblock %}
+
+{% block content %}
+<style>
+  .auth-shell{
+    min-height: 72vh;
+    display: grid;
+    place-items: center;
+  }
+  .auth-card{
+    width: 100%;
+    max-width: 460px;
+    background: linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.015));
+    border: 1px solid rgba(255,255,255,.10);
+    border-radius: 16px;
+    box-shadow: 0 18px 48px rgba(0,0,0,.28);
+    padding: 1.1rem 1.15rem;
+  }
+  .auth-title{margin: .25rem 0 .9rem; color: #fff; font-weight: 900; letter-spacing: .2px; text-align:center}
+  .auth-lead{margin: -.35rem 0 1rem; color: var(--muted); text-align:center}
+
+  .form-control{display:grid; gap:.25rem; margin:.3rem 0}
+  .form-control:has(.field-validation.show) { gap: .3rem; }
+  .form-control:has(.password-requirements) { gap: .3rem; }
+  .form-control:has(.password-match.show) { gap: .3rem; }
+  .form-control label{font-weight:800; color:#f1f6f3}
+  .input{width:100%; background:#09130f; border:1px solid rgba(255,255,255,.16); color:var(--text); border-radius:12px; padding:.7rem .85rem}
+  .input::placeholder{color:#dbe7e1; opacity:.9}
+
+  .pwd-wrap{position:relative}
+  .input.has-eye{padding-left: 2.3rem;}
+  .eye-toggle{
+    position:absolute; left:.45rem; top:50%; transform: translateY(-50%);
+    display:grid; place-items:center;
+    width: 28px; height: 28px;
+    border: 1px solid rgba(255,255,255,.16);
+    background:#0a1713; color: var(--text);
+    border-radius: 8px; cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .eye-toggle:hover {
+    background: rgba(255,255,255,.1);
+    border-color: rgba(255,255,255,.3);
+    transform: translateY(-50%) scale(1.05);
+  }
+  .eye-toggle:active {
+    transform: translateY(-50%) scale(0.95);
+  }
+  .eye-toggle svg{width:18px; height:18px; display:block; transition: all 0.3s ease}
+  .eye-toggle .icon-off{display:none}
+  .eye-toggle[aria-pressed="true"] .icon-on{display:none}
+  .eye-toggle[aria-pressed="true"] .icon-off{display:block}
+
+  .hint{font-size:.9rem; color:var(--muted)}
+  
+  /* متطلبات كلمة المرور */
+  .password-requirements {
+    margin-top: 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  
+  .requirement-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.8rem;
+    padding: 4px 8px;
+    border-radius: 6px;
+    background: rgba(255,255,255,.02);
+    border: 1px solid rgba(255,255,255,.05);
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .requirement-item::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 0;
+    height: 100%;
+    background: linear-gradient(90deg, rgba(34,197,94,.15), rgba(34,197,94,.08), rgba(34,197,94,.15));
+    background-size: 200% 100%;
+    transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 0;
+    animation: shimmer 2s infinite;
+  }
+  
+  @keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
+  
+  .requirement-item.valid::before {
+    width: 100%;
+  }
+  
+  .requirement-icon {
+    font-size: 14px;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: rgba(239,68,68,.1);
+    color: #ef4444;
+  }
+  
+  .requirement-item.valid .requirement-icon {
+    background: rgba(34,197,94,.1);
+    color: #22c55e;
+    transform: scale(1.15) rotate(360deg);
+    box-shadow: 0 0 0 3px rgba(34,197,94,.2), 0 0 20px rgba(34,197,94,.3);
+  }
+  
+  .requirement-text {
+    color: var(--muted);
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    z-index: 1;
+    font-weight: 500;
+  }
+  
+  .requirement-item.valid .requirement-text {
+    color: #22c55e;
+    font-weight: 600;
+  }
+  
+  /* مؤشر تطابق كلمة المرور */
+  .password-match {
+    margin-top: 6px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.8rem;
+    padding: 4px 8px;
+    border-radius: 6px;
+    background: rgba(255,255,255,.02);
+    border: 1px solid rgba(255,255,255,.05);
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  
+  .password-match.show {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  
+  .password-match::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 0;
+    height: 100%;
+    background: linear-gradient(90deg, rgba(34,197,94,.15), rgba(34,197,94,.08), rgba(34,197,94,.15));
+    background-size: 200% 100%;
+    transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 0;
+    animation: shimmer 2s infinite;
+  }
+  
+  .password-match.valid::before {
+    width: 100%;
+  }
+  
+  .match-icon {
+    font-size: 14px;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: rgba(239,68,68,.1);
+    color: #ef4444;
+  }
+  
+  .password-match.valid .match-icon {
+    background: rgba(34,197,94,.1);
+    color: #22c55e;
+    transform: scale(1.15) rotate(360deg);
+    box-shadow: 0 0 0 3px rgba(34,197,94,.2), 0 0 20px rgba(34,197,94,.3);
+  }
+  
+  .match-text {
+    color: var(--muted);
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    z-index: 1;
+    font-weight: 500;
+  }
+  
+  .password-match.valid .match-text {
+    color: #22c55e;
+    font-weight: 600;
+  }
+  
+  /* مؤشرات التحقق للحقول الأخرى */
+  .field-validation {
+    margin-top: 6px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.8rem;
+    padding: 4px 8px;
+    border-radius: 6px;
+    background: rgba(255,255,255,.02);
+    border: 1px solid rgba(255,255,255,.05);
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  
+  .field-validation.show {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  
+  .field-validation::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 0;
+    height: 100%;
+    background: linear-gradient(90deg, rgba(34,197,94,.15), rgba(34,197,94,.08), rgba(34,197,94,.15));
+    background-size: 200% 100%;
+    transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 0;
+    animation: shimmer 2s infinite;
+  }
+  
+  .field-validation.valid::before {
+    width: 100%;
+  }
+  
+  .validation-icon {
+    font-size: 14px;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: rgba(239,68,68,.1);
+    color: #ef4444;
+  }
+  
+  .field-validation.valid .validation-icon {
+    background: rgba(34,197,94,.1);
+    color: #22c55e;
+    transform: scale(1.15) rotate(360deg);
+    box-shadow: 0 0 0 3px rgba(34,197,94,.2), 0 0 20px rgba(34,197,94,.3);
+  }
+  
+  .field-validation.loading .validation-icon {
+    background: rgba(59,130,246,.1);
+    color: #3b82f6;
+    animation: spin 1s linear infinite;
+  }
+  
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+  
+  .validation-text {
+    color: var(--muted);
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    z-index: 1;
+    font-weight: 500;
+  }
+  
+  .field-validation.valid .validation-text {
+    color: #22c55e;
+    font-weight: 600;
+  }
+  
+  .field-validation.loading .validation-text {
+    color: #3b82f6;
+    font-weight: 500;
+  }
+  
+  .auth-actions{display:flex; gap:.6rem; align-items:center; justify-content:center; margin-top: .9rem}
+  .auth-links{display:flex; gap:.5rem; flex-wrap:wrap}
+  .auth-links a{color:var(--accent); font-weight:800}
+</style>
+
+<div class="auth-shell">
+  <div class="auth-card">
+    <h1 class="auth-title">إنشاء حساب</h1>
+    <p class="auth-lead">املأ البيانات التالية لبدء رحلتك.</p>
+
+    <form method="post" action="{% url 'core:signup' %}">
+      {% csrf_token %}
+      
+      <!-- عرض رسائل الخطأ والنجاح -->
+      {% if messages %}
+        {% for message in messages %}
+          {% if message.tags == 'success' %}
+            <div class="alert alert-{{ message.tags }}" style="background: rgba(34,197,94,.1); border: 1px solid rgba(34,197,94,.3); color: #22c55e; padding: 12px 16px; border-radius: 12px; margin-bottom: 16px; font-weight: 600;">
+              {{ message }}
+            </div>
+          {% elif message.tags == 'error' %}
+            <div class="alert alert-{{ message.tags }}" style="background: rgba(239,68,68,.1); border: 1px solid rgba(239,68,68,.3); color: #ef4444; padding: 12px 16px; border-radius: 12px; margin-bottom: 16px; font-weight: 600;">
+              {{ message }}
+            </div>
+          {% elif message.tags == 'warning' %}
+            <div class="alert alert-{{ message.tags }}" style="background: rgba(245,158,11,.1); border: 1px solid rgba(245,158,11,.3); color: #f59e0b; padding: 12px 16px; border-radius: 12px; margin-bottom: 16px; font-weight: 600;">
+              {{ message }}
+            </div>
+          {% else %}
+            <div class="alert alert-{{ message.tags }}" style="background: rgba(59,130,246,.1); border: 1px solid rgba(59,130,246,.3); color: #3b82f6; padding: 12px 16px; border-radius: 12px; margin-bottom: 16px; font-weight: 600;">
+              {{ message }}
+            </div>
+          {% endif %}
+        {% endfor %}
+      {% endif %}
+      
+      {% if form.errors %}
+        <div class="alert alert-error" style="background: rgba(239,68,68,.1); border: 1px solid rgba(239,68,68,.3); color: #ef4444; padding: 12px 16px; border-radius: 12px; margin-bottom: 16px; font-weight: 600;">
+          {% for field, errors in form.errors.items %}
+            {% for error in errors %}
+              <div>{{ error }}</div>
+            {% endfor %}
+          {% endfor %}
+        </div>
+      {% endif %}
+      
+      <div class="form-control">
+        <label for="id_display_name">اسم العرض</label>
+        <input id="id_display_name" name="display_name" class="input" placeholder="مثال: خالد محمد" required autofocus>
+        <div class="field-validation" id="display-name-validation">
+          <span class="validation-icon">⭕</span>
+          <span class="validation-text">اسم العرض غير صحيح</span>
+        </div>
+      </div>
+
+      <div class="form-control">
+        <label for="id_username">اسم المستخدم</label>
+        <input id="id_username" name="username" class="input" placeholder="مثال: mohamed139" required>
+        <div class="field-validation" id="username-validation">
+          <span class="validation-icon">⭕</span>
+          <span class="validation-text">اسم المستخدم غير متاح</span>
+        </div>
+      </div>
+
+      <div class="form-control">
+        <label for="id_email">البريد الإلكتروني (اختياري)</label>
+        <input id="id_email" name="email" type="email" class="input" placeholder="مثال: example@gmail.com">
+        <div class="field-validation" id="email-validation">
+          <span class="validation-icon">⭕</span>
+          <span class="validation-text">البريد الإلكتروني غير صحيح</span>
+        </div>
+      </div>
+
+      <div class="form-control">
+        <label for="id_password1">كلمة المرور</label>
+        <div class="pwd-wrap">
+          <input id="id_password1" name="password1" type="password"
+                 class="input has-eye"
+                 placeholder="على الأقل 8 أحرف وتحتوي أحرفًا وأرقامًا"
+                 minlength="8"
+                 pattern="(?=.*[A-Za-z])(?=.*\d).{8,}"
+                 title="8 أحرف على الأقل وتحتوي على أحرف وأرقام"
+                 required>
+          <button type="button" id="togglePwd" class="eye-toggle" aria-label="إظهار كلمة المرور" aria-pressed="false">
+            <!-- عين -->
+            <svg class="icon-on" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z" stroke="currentColor" stroke-width="2"/>
+              <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/>
+            </svg>
+            <!-- عين متشطّبة -->
+            <svg class="icon-off" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M3 3l18 18" stroke="currentColor" stroke-width="2"/>
+              <path d="M2 12s3.5-6 10-6c-2.3 0-4.2.7-5.7 1.7M22 12s-3.5 6-10 6c-2.3 0-4.2-.7-5.7-1.7" stroke="currentColor" stroke-width="2"/>
+              <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/>
+            </svg>
+          </button>
+        </div>
+        <!-- متطلبات كلمة المرور -->
+        <div class="password-requirements">
+          <div class="requirement-item" id="req-length">
+            <span class="requirement-icon">⭕</span>
+            <span class="requirement-text">8 أحرف على الأقل</span>
+          </div>
+          <div class="requirement-item" id="req-letters">
+            <span class="requirement-icon">⭕</span>
+            <span class="requirement-text">تحتوي على أحرف</span>
+          </div>
+          <div class="requirement-item" id="req-numbers">
+            <span class="requirement-icon">⭕</span>
+            <span class="requirement-text">تحتوي على أرقام</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-control">
+        <label for="id_password2">تأكيد كلمة المرور</label>
+        <div class="pwd-wrap">
+          <input id="id_password2" name="password2" type="password"
+                 class="input has-eye"
+                 placeholder="أعد إدخال كلمة المرور"
+                 required>
+          <button type="button" id="togglePwd2" class="eye-toggle" aria-label="إظهار تأكيد كلمة المرور" aria-pressed="false">
+            <!-- عين -->
+            <svg class="icon-on" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z" stroke="currentColor" stroke-width="2"/>
+              <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/>
+            </svg>
+            <!-- عين متشطّبة -->
+            <svg class="icon-off" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M3 3l18 18" stroke="currentColor" stroke-width="2"/>
+              <path d="M2 12s3.5-6 10-6c-2.3 0-4.2.7-5.7 1.7M22 12s-3.5 6-10 6c-2.3 0-4.2-.7-5.7-1.7" stroke="currentColor" stroke-width="2"/>
+              <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/>
+            </svg>
+          </button>
+        </div>
+        <!-- مؤشر تطابق كلمة المرور -->
+        <div class="password-match" id="password-match">
+          <span class="match-icon">⭕</span>
+          <span class="match-text">كلمة المرور غير متطابقة</span>
+        </div>
+      </div>
+
+      <div class="auth-actions">
+        <button class="btn btn-primary" type="submit">إنشاء الحساب</button>
+      </div>
+
+      <div class="auth-actions">
+        <div class="auth-links">
+          <a href="{% url 'core:login' %}">لديك حساب؟ سجّل دخول</a>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  (function(){
+    // إعداد عين كلمة المرور الأولى
+    const btn1 = document.getElementById('togglePwd');
+    const input1 = document.getElementById('id_password1');
+    if(btn1 && input1){
+      btn1.addEventListener('click', ()=>{
+        const show = input1.getAttribute('type') === 'password';
+        input1.setAttribute('type', show ? 'text' : 'password');
+        btn1.setAttribute('aria-pressed', show ? 'true' : 'false');
+        btn1.setAttribute('aria-label', show ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور');
+      });
+    }
+    
+    // إعداد عين تأكيد كلمة المرور
+    const btn2 = document.getElementById('togglePwd2');
+    const input2 = document.getElementById('id_password2');
+    if(btn2 && input2){
+      btn2.addEventListener('click', ()=>{
+        const show = input2.getAttribute('type') === 'password';
+        input2.setAttribute('type', show ? 'text' : 'password');
+        btn2.setAttribute('aria-pressed', show ? 'true' : 'false');
+        btn2.setAttribute('aria-label', show ? 'إخفاء تأكيد كلمة المرور' : 'إظهار تأكيد كلمة المرور');
+      });
+    }
+    
+    // فحص متطلبات كلمة المرور
+    function checkPasswordRequirements(password) {
+      const lengthReq = document.getElementById('req-length');
+      const lettersReq = document.getElementById('req-letters');
+      const numbersReq = document.getElementById('req-numbers');
+      
+      // فحص الطول
+      if (password.length >= 8) {
+        lengthReq.classList.add('valid');
+        lengthReq.querySelector('.requirement-icon').textContent = '✓';
+      } else {
+        lengthReq.classList.remove('valid');
+        lengthReq.querySelector('.requirement-icon').textContent = '⭕';
+      }
+      
+      // فحص الأحرف (عربية أو إنجليزية)
+      if (/[a-zA-Z\u0600-\u06FF]/.test(password)) {
+        lettersReq.classList.add('valid');
+        lettersReq.querySelector('.requirement-icon').textContent = '✓';
+      } else {
+        lettersReq.classList.remove('valid');
+        lettersReq.querySelector('.requirement-icon').textContent = '⭕';
+      }
+      
+      // فحص الأرقام
+      if (/\d/.test(password)) {
+        numbersReq.classList.add('valid');
+        numbersReq.querySelector('.requirement-icon').textContent = '✓';
+      } else {
+        numbersReq.classList.remove('valid');
+        numbersReq.querySelector('.requirement-icon').textContent = '⭕';
+      }
+    }
+    
+    // فحص تطابق كلمة المرور
+    function checkPasswordMatch() {
+      const password1 = document.getElementById('id_password1').value;
+      const password2 = document.getElementById('id_password2').value;
+      const matchIndicator = document.getElementById('password-match');
+      
+      if (password2.length > 0) {
+        matchIndicator.classList.add('show');
+        if (password1 === password2) {
+          matchIndicator.classList.add('valid');
+          matchIndicator.querySelector('.match-icon').textContent = '✓';
+          matchIndicator.querySelector('.match-text').textContent = 'كلمة المرور متطابقة';
+        } else {
+          matchIndicator.classList.remove('valid');
+          matchIndicator.querySelector('.match-icon').textContent = '⭕';
+          matchIndicator.querySelector('.match-text').textContent = 'كلمة المرور غير متطابقة';
+        }
+      } else {
+        matchIndicator.classList.remove('show');
+        matchIndicator.classList.remove('valid');
+        matchIndicator.querySelector('.match-icon').textContent = '⭕';
+        matchIndicator.querySelector('.match-text').textContent = 'كلمة المرور غير متطابقة';
+      }
+    }
+    
+    // التحقق من اسم العرض مع تأخير 4 ثواني
+    let displayNameTimeout;
+    function checkDisplayName(name) {
+      const validation = document.getElementById('display-name-validation');
+      
+      // إلغاء المؤقت السابق
+      if (displayNameTimeout) {
+        clearTimeout(displayNameTimeout);
+      }
+      
+      if (name.length > 0) {
+        validation.classList.add('show');
+        validation.classList.add('loading');
+        validation.querySelector('.validation-icon').textContent = '⟳';
+        validation.querySelector('.validation-text').textContent = 'جاري التحقق من اسم العرض...';
+        
+        // تأخير 2 ثانية
+        displayNameTimeout = setTimeout(() => {
+          if (name.length >= 2 && name.trim() !== '') {
+            validation.classList.remove('loading');
+            validation.classList.add('valid');
+            validation.querySelector('.validation-icon').textContent = '✓';
+            validation.querySelector('.validation-text').textContent = 'اسم جميل :)';
+          } else {
+            validation.classList.remove('loading');
+            validation.classList.remove('valid');
+            validation.querySelector('.validation-icon').textContent = '⭕';
+            validation.querySelector('.validation-text').textContent = 'اسم العرض قصير جداً';
+          }
+        }, 2000);
+      } else {
+        validation.classList.remove('show');
+        validation.classList.remove('loading');
+      }
+    }
+    
+    // التحقق من البريد الإلكتروني
+    function checkEmail(email) {
+      const validation = document.getElementById('email-validation');
+      if (email.length > 0) {
+        validation.classList.add('show');
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (emailRegex.test(email)) {
+          validation.classList.add('valid');
+          validation.querySelector('.validation-icon').textContent = '✓';
+          validation.querySelector('.validation-text').textContent = 'البريد الإلكتروني صحيح';
+        } else {
+          validation.classList.remove('valid');
+          validation.querySelector('.validation-icon').textContent = '⭕';
+          validation.querySelector('.validation-text').textContent = 'البريد الإلكتروني غير صحيح';
+        }
+      } else {
+        validation.classList.remove('show');
+      }
+    }
+    
+    // التحقق من اسم المستخدم فوري
+    function checkUsername(username) {
+      const validation = document.getElementById('username-validation');
+      if (username.length > 0) {
+        validation.classList.add('show');
+        const usernameRegex = /^[a-zA-Z0-9_.-]+$/;
+        const hasNumber = /\d/.test(username);
+        
+        if (username.length >= 3 && usernameRegex.test(username) && !username.startsWith('.') && !username.endsWith('.') && !username.startsWith('-') && !username.endsWith('-') && hasNumber) {
+          validation.classList.add('valid');
+          validation.querySelector('.validation-icon').textContent = '✓';
+          validation.querySelector('.validation-text').textContent = 'اسم المستخدم متاح';
+        } else if (!hasNumber) {
+          validation.classList.remove('valid');
+          validation.querySelector('.validation-icon').textContent = '⭕';
+          validation.querySelector('.validation-text').textContent = 'يجب أن يحتوي على رقم';
+        } else if (username.length < 3) {
+          validation.classList.remove('valid');
+          validation.querySelector('.validation-icon').textContent = '⭕';
+          validation.querySelector('.validation-text').textContent = 'اسم المستخدم قصير جداً';
+        } else {
+          validation.classList.remove('valid');
+          validation.querySelector('.validation-icon').textContent = '⭕';
+          validation.querySelector('.validation-text').textContent = 'اسم المستخدم غير صالح';
+        }
+      } else {
+        validation.classList.remove('show');
+      }
+    }
+    
+    // إضافة المستمعين للأحداث
+    document.getElementById('id_display_name').addEventListener('input', function() {
+      checkDisplayName(this.value);
+    });
+    
+    document.getElementById('id_username').addEventListener('input', function() {
+      checkUsername(this.value);
+    });
+    
+    document.getElementById('id_email').addEventListener('input', function() {
+      checkEmail(this.value);
+    });
+    
+    input1.addEventListener('input', function() {
+      checkPasswordRequirements(this.value);
+      checkPasswordMatch();
+    });
+    
+    input2.addEventListener('input', checkPasswordMatch);
+  })();
+</script>
+{% endblock %}

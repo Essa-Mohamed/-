@@ -1,0 +1,121 @@
+from django import template
+
+register = template.Library()
+
+ARABIC_INDIC_DIGITS = str.maketrans('0123456789', '٠١٢٣٤٥٦٧٨٩')
+
+@register.filter
+def arabic_digits(value):
+    try:
+        return str(value).translate(ARABIC_INDIC_DIGITS)
+    except Exception:
+        return value
+
+@register.filter
+def juz_ordinal_arabic(number):
+    mapping = {
+        1:'الأول',2:'الثاني',3:'الثالث',4:'الرابع',5:'الخامس',6:'السادس',
+        7:'السابع',8:'الثامن',9:'التاسع',10:'العاشر',11:'الحادي عشر',
+        12:'الثاني عشر',13:'الثالث عشر',14:'الرابع عشر',15:'الخامس عشر',
+        16:'السادس عشر',17:'السابع عشر',18:'الثامن عشر',19:'التاسع عشر',
+        20:'العشرون',21:'الحادي والعشرون',22:'الثاني والعشرون',23:'الثالث والعشرون',
+        24:'الرابع والعشرون',25:'الخامس والعشرون',26:'السادس والعشرون',
+        27:'السابع والعشرون',28:'الثامن والعشرون',29:'التاسع والعشرون',
+        30:'الثلاثون',
+    }
+    try:
+        n = int(number)
+        return f"الجزء {mapping.get(n, n)}"
+    except Exception:
+        return number
+
+SURAH_NAMES = [
+    "", "البقرة؟",  # placeholder index 0
+]
+# أسماء السور كاملة:
+SURAH_NAMES = [
+ "", "الفاتحة","البقرة","آل عمران","النساء","المائدة","الأنعام","الأعراف","الأنفال","التوبة",
+ "يونس","هود","يوسف","الرعد","إبراهيم","الحجر","النحل","الإسراء","الكهف","مريم","طه",
+ "الأنبياء","الحج","المؤمنون","النور","الفرقان","الشعراء","النمل","القصص","العنكبوت","الروم",
+ "لقمان","السجدة","الأحزاب","سبأ","فاطر","يس","الصافات","ص","الزمر","غافر",
+ "فصلت","الشورى","الزخرف","الدخان","الجاثية","الأحقاف","محمد","الفتح","الحجرات","ق",
+ "الذاريات","الطور","النجم","القمر","الرحمن","الواقعة","الحديد","المجادلة","الحشر","الممتحنة",
+ "الصف","الجمعة","المنافقون","التغابن","الطلاق","التحريم","الملك","القلم","الحاقة","المعارج",
+ "نوح","الجن","المزمل","المدثر","القيامة","الإنسان","المرسلات","النبأ","النازعات","عبس",
+ "التكوير","الانفطار","المطففين","الانشقاق","البروج","الطارق","الأعلى","الغاشية","الفجر","البلد",
+ "الشمس","الليل","الضحى","الشرح","التين","العلق","القدر","البينة","الزلزلة","العاديات",
+ "القارعة","التكاثر","العصر","الهمزة","الفيل","قريش","الماعون","الكوثر","الكافرون","النصر",
+ "المسد","الإخلاص","الفلق","الناس"
+]
+
+@register.filter
+def surah_name(num):
+    try:
+        n = int(num)
+        if 1 <= n <= 114:
+            return SURAH_NAMES[n]
+    except Exception:
+        pass
+    return f"سورة {num}"
+
+PLACE_WORDS = {1:"الأول",2:"الثاني",3:"الثالث",4:"الرابع",5:"الخامس",6:"السادس",7:"السابع",8:"الثامن",9:"التاسع",10:"العاشر",
+               11:"الحادي عشر",12:"الثاني عشر",13:"الثالث عشر",14:"الرابع عشر",15:"الخامس عشر",16:"السادس عشر",
+               17:"السابع عشر",18:"الثامن عشر",19:"التاسع عشر",20:"العشرون"}
+
+@register.filter
+def place_ordinal(n):
+    try:
+        n = int(n)
+        return f"الموضع {PLACE_WORDS.get(n, n)}"
+    except Exception:
+        return f"الموضع {n}"
+
+@register.filter
+def get_item(dictionary, key):
+    """للحصول على قيمة من dictionary باستخدام key"""
+    try:
+        return dictionary.get(key)
+    except Exception:
+        return None
+
+# ----- Helpers for quarters (absolute 1..240) -----
+@register.filter
+def quarter_to_juz(total_quarter):
+    """Convert absolute quarter number (1..240) to its Juz number (1..30)."""
+    try:
+        n = int(total_quarter)
+        if n <= 0:
+            return 1
+        return ((n - 1) // 8) + 1
+    except Exception:
+        return total_quarter
+
+@register.filter
+def quarter_in_juz(total_quarter):
+    """Convert absolute quarter number (1..240) to index within Juz (1..8)."""
+    try:
+        n = int(total_quarter)
+        if n <= 0:
+            return 1
+        return ((n - 1) % 8) + 1
+    except Exception:
+        return total_quarter
+
+@register.filter
+def quarter_name_ar(idx):
+    """Arabic ordinal name for quarter index within juz (1..8)."""
+    names = {
+        1: "الأول",
+        2: "الثاني",
+        3: "الثالث",
+        4: "الرابع",
+        5: "الخامس",
+        6: "السادس",
+        7: "السابع",
+        8: "الثامن",
+    }
+    try:
+        i = int(idx)
+        return names.get(i, str(i))
+    except Exception:
+        return str(idx)

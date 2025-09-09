@@ -1,0 +1,7 @@
+.wrap{min-height:70vh;display:grid;gap:1rem;align-content:start}
+.h1{font-size:1.4rem;margin:.25rem 0 1rem}
+.card{border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:12px;background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,.10))}
+.row{display:flex;gap:.6rem;align-items:center}
+.btn{padding:.5rem .9rem;border-radius:10px;border:1px solid rgba(212,175,55,.65);background:linear-gradient(135deg,#f1cf6b,#f3e4a8);font-weight:800;color:#0e1a14;cursor:pointer}
+.btn-outline{background:transparent}
+.note{margin:.6rem 0;padding:.5rem .8rem;border:1px dashed #caa957;border-radius:10px;opacity:.9}

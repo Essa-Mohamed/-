@@ -1,0 +1,669 @@
+{% extends "core/base.html" %}{% load static arabic_extras highlight %}
+{% block title %}اختبار موقع الآية — سؤال {{ question_number|arabic_digits }}{% endblock %}
+
+{% block content %}
+<div class="q-wrapper" dir="rtl">
+  <div id="toast" class="toast" aria-live="polite" aria-atomic="true"></div>
+
+  <header class="q-header">
+    <div class="q-scope">{{ scope_label }}</div>
+    <div class="q-top">
+      <div class="q-counter">
+        سؤال <strong>{{ question_number|arabic_digits }}</strong>
+        من <strong>{{ total_questions|arabic_digits }}</strong>
+      </div>
+
+      <div class="q-head-actions">
+        <button type="button" class="btn btn-outline" id="endBtn" aria-label="إنهاء الاختبار الآن">
+          إنهاء الاختبار
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="q-main">
+    {% if stage == 'combined_selection' %}
+    <article class="q-card">
+      <div class="q-ayah-info">
+        <h1 class="q-ayah-text" aria-live="polite">{{ ayah_text }}</h1>
+      </div>
+    </article>
+
+    <!-- النموذج المشترك للربع والصفحة -->
+    <form id="combinedForm" method="post" class="q-form">{% csrf_token %}
+        <fieldset class="q-options">
+        <legend class="q-question-text">اختر الربع والصفحة التي توجد فيهما الآية التالية:</legend>
+        
+        <!-- اختيار الربع -->
+        <div class="q-section">
+          <h3 class="q-section-title">الربع:</h3>
+          {% for quarter_num in quarter_options %}
+            <label class="q-option">
+              <input type="radio" name="quarter_selection" value="{{ quarter_num }}" required>
+              <span class="q-pill">
+                {% if quarter_num == 1 %}
+                  ربع "بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ"
+                {% elif quarter_num == 2 %}
+                  ربع "قُلْ أَعُوذُ بِرَبِّ الْفَلَقِ"
+                {% elif quarter_num == 3 %}
+                  ربع "قُلْ أَعُوذُ بِرَبِّ النَّاسِ"
+                {% elif quarter_num == 4 %}
+                  ربع "إِنَّ اللَّهَ وَمَلَائِكَتَهُ يُصَلُّونَ عَلَى النَّبِيِّ"
+                {% elif quarter_num == 5 %}
+                  ربع "قَدْ أَفْلَحَ الْمُؤْمِنُونَ"
+                {% elif quarter_num == 6 %}
+                  ربع "إِنَّ اللَّهَ يَأْمُرُ بِالْعَدْلِ وَالْإِحْسَانِ"
+                {% elif quarter_num == 7 %}
+                  ربع "وَإِذَا قُرِئَ الْقُرْآنُ فَاسْتَمِعُوا لَهُ"
+                {% elif quarter_num == 8 %}
+                  ربع "إِنَّ اللَّهَ لَا يَسْتَحْيِي أَنْ يَضْرِبَ مَثَلًا"
+                {% elif quarter_num == 9 %}
+                  ربع "إِنَّ اللَّهَ اشْتَرَىٰ مِنَ الْمُؤْمِنِينَ أَنْفُسَهُمْ"
+                {% elif quarter_num == 10 %}
+                  ربع "وَمَا أَرْسَلْنَا مِنْ قَبْلِكَ إِلَّا رِجَالًا"
+                {% elif quarter_num == 11 %}
+                  ربع "قُلْ أَعُوذُ بِرَبِّ النَّاسِ"
+                {% elif quarter_num == 12 %}
+                  ربع "إِنَّ اللَّهَ يَأْمُرُ بِالْعَدْلِ وَالْإِحْسَانِ"
+                {% elif quarter_num == 13 %}
+                  ربع "وَإِذَا قُرِئَ الْقُرْآنُ فَاسْتَمِعُوا لَهُ"
+                {% elif quarter_num == 14 %}
+                  ربع "إِنَّ اللَّهَ لَا يَسْتَحْيِي أَنْ يَضْرِبَ مَثَلًا"
+                {% elif quarter_num == 15 %}
+                  ربع "إِنَّ اللَّهَ اشْتَرَىٰ مِنَ الْمُؤْمِنِينَ أَنْفُسَهُمْ"
+                {% elif quarter_num == 16 %}
+                  ربع "وَمَا أَرْسَلْنَا مِنْ قَبْلِكَ إِلَّا رِجَالًا"
+                {% else %}
+                  ربع {{ quarter_num|arabic_digits }}
+                {% endif %}
+              </span>
+            </label>
+          {% endfor %}
+        </div>
+
+        <!-- اختيار الصفحة -->
+        <div class="q-section">
+          <h3 class="q-section-title">الصفحة داخل الربع:</h3>
+          {% for page_num in page_in_quarter_options %}
+            <label class="q-option">
+              <input type="radio" name="page_in_quarter_selection" value="{{ page_num }}" required>
+              <span class="q-pill">
+                {% if page_num == 1 %}
+                  الصفحة الأولى
+                {% elif page_num == 2 %}
+                  الصفحة الثانية
+                {% elif page_num == 3 %}
+                  الصفحة الثالثة
+                {% elif page_num == 4 %}
+                  الصفحة الرابعة
+                {% else %}
+                  الصفحة {{ page_num|arabic_digits }}
+                {% endif %}
+              </span>
+            </label>
+          {% endfor %}
+        </div>
+        </fieldset>
+
+        <div id="feedback" class="q-feedback" hidden></div>
+        <div class="q-actions">
+        <button type="submit" class="btn btn-primary" id="combinedBtn">تحقّق</button>
+        </div>
+      </form>
+    
+
+    
+    {% elif stage == 'quarter_feedback' %}
+    <article class="q-card">
+      <div class="q-ayah-info">
+        <h1 class="q-ayah-text" aria-live="polite">{{ ayah_text }}</h1>
+      </div>
+    </article>
+    
+    <!-- عرض التحقق من الربع -->
+    <div class="q-feedback {% if quarter_is_correct %}correct{% else %}incorrect{% endif %}">
+      {% if quarter_is_correct %}
+        ✅ إجابة صحيحة! الربع المختار صحيح.
+      {% else %}
+        ❌ إجابة خاطئة! الربع الصحيح هو: 
+        {% if correct_quarter == 1 %}
+          ربع "بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ"
+        {% elif correct_quarter == 2 %}
+          ربع "قُلْ أَعُوذُ بِرَبِّ الْفَلَقِ"
+        {% elif correct_quarter == 3 %}
+          ربع "قُلْ أَعُوذُ بِرَبِّ النَّاسِ"
+        {% elif correct_quarter == 4 %}
+          ربع "إِنَّ اللَّهَ وَمَلَائِكَتَهُ يُصَلُّونَ عَلَى النَّبِيِّ"
+        {% elif correct_quarter == 5 %}
+          ربع "قَدْ أَفْلَحَ الْمُؤْمِنُونَ"
+        {% elif correct_quarter == 6 %}
+          ربع "إِنَّ اللَّهَ يَأْمُرُ بِالْعَدْلِ وَالْإِحْسَانِ"
+        {% elif correct_quarter == 7 %}
+          ربع "وَإِذَا قُرِئَ الْقُرْآنُ فَاسْتَمِعُوا لَهُ"
+        {% elif correct_quarter == 8 %}
+          ربع "إِنَّ اللَّهَ لَا يَسْتَحْيِي أَنْ يَضْرِبَ مَثَلًا"
+        {% elif correct_quarter == 9 %}
+          ربع "إِنَّ اللَّهَ اشْتَرَىٰ مِنَ الْمُؤْمِنِينَ أَنْفُسَهُمْ"
+        {% elif correct_quarter == 10 %}
+          ربع "وَمَا أَرْسَلْنَا مِنْ قَبْلِكَ إِلَّا رِجَالًا"
+        {% elif correct_quarter == 11 %}
+          ربع "قُلْ أَعُوذُ بِرَبِّ النَّاسِ"
+        {% elif correct_quarter == 12 %}
+          ربع "إِنَّ اللَّهَ يَأْمُرُ بِالْعَدْلِ وَالْإِحْسَانِ"
+        {% elif correct_quarter == 13 %}
+          ربع "وَإِذَا قُرِئَ الْقُرْآنُ فَاسْتَمِعُوا لَهُ"
+        {% elif correct_quarter == 14 %}
+          ربع "إِنَّ اللَّهَ لَا يَسْتَحْيِي أَنْ يَضْرِبَ مَثَلًا"
+        {% elif correct_quarter == 15 %}
+          ربع "إِنَّ اللَّهَ اشْتَرَىٰ مِنَ الْمُؤْمِنِينَ أَنْفُسَهُمْ"
+        {% elif correct_quarter == 16 %}
+          ربع "وَمَا أَرْسَلْنَا مِنْ قَبْلِكَ إِلَّا رِجَالًا"
+        {% else %}
+          ربع {{ correct_quarter|arabic_digits }}
+        {% endif %}
+      {% endif %}
+    </div>
+    
+    <!-- النموذج للانتقال للمرحلة التالية -->
+    <form id="quarterNextForm" method="post" class="q-form">{% csrf_token %}
+      <input type="hidden" name="stage" value="quarter_feedback">
+      <div class="q-actions">
+        <button type="submit" class="btn btn-primary" id="quarterNextBtn">التالي →</button>
+        </div>
+      </form>
+    {% elif stage == 'combined_feedback' %}
+    <article class="q-card">
+      <div class="q-ayah-info">
+        <h1 class="q-ayah-text" aria-live="polite">{{ ayah_text }}</h1>
+      </div>
+    </article>
+    
+    <!-- تحقق الربع -->
+    <div class="q-feedback {% if quarter_is_correct %}correct{% else %}incorrect{% endif %}">
+      {% if quarter_is_correct %}
+        ✅ الربع صحيح
+      {% else %}
+        ⚠️ الربع غير صحيح — الربع الصحيح: 
+        {% if correct_quarter == 1 %}
+          ربع "بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ"
+        {% elif correct_quarter == 2 %}
+          ربع "قُلْ أَعُوذُ بِرَبِّ الْفَلَقِ"
+        {% elif correct_quarter == 3 %}
+          ربع "قُلْ أَعُوذُ بِرَبِّ النَّاسِ"
+        {% elif correct_quarter == 4 %}
+          ربع "إِنَّ اللَّهَ وَمَلَائِكَتَهُ يُصَلُّونَ عَلَى النَّبِيِّ"
+        {% elif correct_quarter == 5 %}
+          ربع "قَدْ أَفْلَحَ الْمُؤْمِنُونَ"
+        {% elif correct_quarter == 6 %}
+          ربع "إِنَّ اللَّهَ يَأْمُرُ بِالْعَدْلِ وَالْإِحْسَانِ"
+        {% elif correct_quarter == 7 %}
+          ربع "وَإِذَا قُرِئَ الْقُرْآنُ فَاسْتَمِعُوا لَهُ"
+        {% elif correct_quarter == 8 %}
+          ربع "إِنَّ اللَّهَ لَا يَسْتَحْيِي أَنْ يَضْرِبَ مَثَلًا"
+        {% elif correct_quarter == 9 %}
+          ربع "إِنَّ اللَّهَ اشْتَرَىٰ مِنَ الْمُؤْمِنِينَ أَنْفُسَهُمْ"
+        {% elif correct_quarter == 10 %}
+          ربع "وَمَا أَرْسَلْنَا مِنْ قَبْلِكَ إِلَّا رِجَالًا"
+        {% elif correct_quarter == 11 %}
+          ربع "قُلْ أَعُوذُ بِرَبِّ النَّاسِ"
+        {% elif correct_quarter == 12 %}
+          ربع "إِنَّ اللَّهَ يَأْمُرُ بِالْعَدْلِ وَالْإِحْسَانِ"
+        {% elif correct_quarter == 13 %}
+          ربع "وَإِذَا قُرِئَ الْقُرْآنُ فَاسْتَمِعُوا لَهُ"
+        {% elif correct_quarter == 14 %}
+          ربع "إِنَّ اللَّهَ لَا يَسْتَحْيِي أَنْ يَضْرِبَ مَثَلًا"
+        {% elif correct_quarter == 15 %}
+          ربع "إِنَّ اللَّهَ اشْتَرَىٰ مِنَ الْمُؤْمِنِينَ أَنْفُسَهُمْ"
+        {% elif correct_quarter == 16 %}
+          ربع "وَمَا أَرْسَلْنَا مِنْ قَبْلِكَ إِلَّا رِجَالًا"
+        {% else %}
+          ربع {{ correct_quarter|arabic_digits }}
+        {% endif %}
+      {% endif %}
+    </div>
+    
+    <!-- تحقق الصفحة -->
+    <div class="q-feedback {% if page_is_correct %}correct{% else %}incorrect{% endif %}">
+      {% if page_is_correct %}
+        ✅ الصفحة صحيحة
+      {% else %}
+        ⚠️ الصفحة غير صحيحة — الصفحة الصحيحة: {{ correct_page_in_quarter|arabic_digits }}
+      {% endif %}
+    </div>
+    
+    <form id="combinedNextForm" method="post" class="q-form">{% csrf_token %}
+      <input type="hidden" name="stage" value="combined_feedback">
+      <div class="q-actions">
+        <button type="submit" class="btn btn-primary" id="combinedNextBtn">التالي →</button>
+      </div>
+    </form>
+    
+    {% elif stage == 'page_feedback' %}
+    <article class="q-card">
+      <div class="q-ayah-info">
+        <h1 class="q-ayah-text" aria-live="polite">{{ ayah_text }}</h1>
+      </div>
+    </article>
+    <div class="q-feedback {% if page_is_correct %}correct{% else %}incorrect{% endif %}">
+      {% if page_is_correct %}
+        ✅ إجابة صحيحة — الصفحة داخل الربع صحيحة.
+      {% else %}
+        ⚠️ إجابة غير صحيحة — الصفحة الصحيحة داخل الربع: {{ correct_page_in_quarter|arabic_digits }}
+      {% endif %}
+    </div>
+    <form id="pageNextForm" method="post" class="q-form">{% csrf_token %}
+      <input type="hidden" name="stage" value="page_feedback">
+      <div class="q-actions">
+        <button type="submit" class="btn btn-primary" id="pageNextBtn">التالي →</button>
+      </div>
+    </form>
+    {% endif %}
+  </main>
+
+    <details class="q-report">
+      <summary>الإبلاغ عن مشكلة في هذا السؤال</summary>
+      <form id="reportForm" method="post" action="{% url 'core:report_question' %}" class="q-report-form">
+        {% csrf_token %}
+        <input type="hidden" name="phrase" value="{{ ayah_text }}">
+        <input type="hidden" name="question_number" value="{{ question_number }}">
+        <input type="hidden" name="given" id="givenField" value="">
+        <input type="hidden" name="correct" value="موقع الآية في الربع">
+        <input type="hidden" name="from" value="verse_location_test">
+        <label for="repText" class="q-label">وصف المشكلة</label>
+        <textarea id="repText" name="text" rows="3" placeholder="اكتب وصفًا مختصرًا للمشكلة…"></textarea>
+        <button type="submit" class="btn btn-danger">إرسال الإبلاغ</button>
+      </form>
+    </details>
+
+    <form id="endForm" method="post" style="display:none;">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="end">
+    </form>
+  </main>
+</div>
+
+<div class="q-modal" id="endModal" aria-hidden="true" role="dialog" aria-labelledby="endTitle">
+  <div class="q-modal-card">
+    <h3 id="endTitle" class="q-modal-title">إنهاء الاختبار؟</h3>
+    <p class="q-modal-text">هل تريد إنهاء الاختبار الآن؟ سيتم عرض نتيجتك حتى هذه اللحظة.</p>
+    <div class="q-modal-actions">
+      <button type="button" class="btn btn-primary" id="confirmEnd">تأكيد الإنهاء</button>
+      <button type="button" class="btn btn-ghost" id="cancelEnd">إلغاء</button>
+    </div>
+  </div>
+</div>
+
+<style>
+:root{--q-bg:#0f0f15;--q-card:#11131d;--q-text:#f3f4f6;--q-sub:#9aa3b2;--q-gold:#d4af37;--q-gold-2:#b88900;--q-ring:rgba(212,175,55,.35);--q-danger:#ef4444;--q-ghost:#2a3040;--q-radius:16px;--q-shadow:0 10px 30px rgba(0,0,0,.35)}
+.q-wrapper{max-width:900px;margin:24px auto;padding:16px;color:var(--q-text);background:radial-gradient(ellipse at top,rgba(251,191,36,0.03) 0%,transparent 50%);min-height:100vh}
+.q-header{margin-bottom:16px}
+.q-scope{color:var(--q-sub);font-size:14px;margin-bottom:8px}
+.q-top{display:grid;gap:10px}
+.q-counter{font-size:15px;background:linear-gradient(135deg,rgba(251,191,36,0.1),rgba(251,191,36,0.05));border:1px solid rgba(251,191,36,0.2);border-radius:12px;padding:8px 16px;display:inline-block}
+.q-head-actions{display:flex;justify-content:flex-end}
+.q-main{display:grid;gap:16px}
+.q-card{background:linear-gradient(180deg,#0f1118,#11131d);border:1px solid rgba(212,175,55,.2);border-radius:var(--q-radius);box-shadow:var(--q-shadow);padding:18px 20px;position:relative;overflow:hidden}
+.q-card::before{content:'';position:absolute;top:-2px;left:-2px;right:-2px;bottom:-2px;background:linear-gradient(45deg,#fbbf24,#f59e0b,#fbbf24,#f59e0b);border-radius:var(--q-radius);z-index:-1;animation:borderGlow 3s linear infinite;background-size:400% 400%}
+.q-card::after{content:'';position:absolute;top:0;left:0;right:0;bottom:0;background:radial-gradient(circle at 50% 50%,rgba(251,191,36,0.1) 0%,transparent 70%);border-radius:var(--q-radius);z-index:-1;animation:pulse 4s ease-in-out infinite}
+
+.q-ayah-info{text-align:center}
+.q-ayah-meta{display:flex;justify-content:center;gap:12px;margin-bottom:16px;flex-wrap:wrap}
+.q-ayah-meta span{background:rgba(212,175,55,.1);border:1px solid rgba(212,175,55,.2);border-radius:8px;padding:6px 12px;font-size:14px;color:var(--q-gold)}
+.q-ayah-text{margin:0;line-height:2.1;font-size:clamp(18px,2.3vw,22px);text-align:center;color:var(--q-text)}
+
+.q-form{display:grid;gap:16px}
+.q-question-text{text-align:center;font-size:18px;margin-bottom:16px;color:var(--q-text)}
+.q-options{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;border:0;padding:0;margin:0}
+@media (max-width:720px){.q-options{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.q-option{position:relative;display:block;cursor:pointer}
+.q-option input{position:absolute;inset:0;opacity:0;pointer-events:none}
+.q-pill{display:grid;place-items:center;height:56px;border-radius:14px;background:#0f1118;border:1px solid rgba(212,175,55,.25);font-size:16px;font-weight:600;letter-spacing:.2px;transition:all .3s ease;position:relative;overflow:hidden}
+.q-pill::before{content:'';position:absolute;top:0;left:-100%;width:100%;height:100%;background:linear-gradient(90deg,transparent,rgba(251,191,36,0.2),transparent);transition:left .5s ease}
+.q-option:hover .q-pill::before{left:100%}
+.q-option:hover .q-pill{transform:translateY(-1px);box-shadow:0 8px 18px rgba(0,0,0,.25)}
+.q-option input:focus-visible+.q-pill{outline:2px solid var(--q-ring);outline-offset:2px}
+.q-option input:checked+.q-pill{background:linear-gradient(135deg,#fbbf24,#f59e0b);border-color:#f59e0b;color:#0f1118;box-shadow:0 8px 20px rgba(251,191,36,.3)}
+.q-option input:checked+.q-pill::before{display:none}
+
+.q-actions{display:flex;justify-content:center}
+.q-feedback{text-align:center;padding:16px;border-radius:12px;font-weight:600;margin:16px 0}
+.q-feedback.correct{background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.2);color:#22c55e}
+.q-feedback.incorrect{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);color:#ef4444}
+
+.q-report{background:rgba(42,48,64,.5);border:1px solid rgba(212,175,55,.1);border-radius:12px;padding:16px}
+.q-report summary{cursor:pointer;color:var(--q-sub);font-weight:600;margin-bottom:16px}
+.q-report-form{display:grid;gap:12px}
+.q-label{color:var(--q-text);font-weight:600}
+.q-report-form textarea{background:#0f1118;border:1px solid rgba(212,175,55,.2);border-radius:8px;padding:12px;color:var(--q-text);resize:vertical;min-height:80px}
+.q-report-form textarea:focus{outline:2px solid var(--q-ring);outline-offset:2px}
+
+.q-modal{position:fixed;inset:0;background:rgba(0,0,0,.8);display:grid;place-items:center;z-index:1000;opacity:0;visibility:hidden;transition:all .3s ease}
+.q-modal[aria-hidden="false"]{opacity:1;visibility:visible}
+.q-modal-card{background:var(--q-card);border:1px solid rgba(212,175,55,.2);border-radius:var(--q-radius);padding:24px;max-width:400px;width:90%;text-align:center}
+.q-modal-title{margin:0 0 16px;color:var(--q-text)}
+.q-modal-text{color:var(--q-sub);margin-bottom:24px;line-height:1.6}
+.q-modal-actions{display:flex;gap:12px;justify-content:center}
+
+@keyframes borderGlow{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+@keyframes pulse{0%,100%{opacity:.1}50%{opacity:.2}}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:12px 24px;border-radius:8px;font-weight:600;text-decoration:none;border:1px solid transparent;cursor:pointer;transition:all .2s ease;font-size:16px}
+.btn-primary{background:linear-gradient(135deg,#fbbf24,#f59e0b);color:#0f1118;border-color:#f59e0b}
+.btn-primary:hover{transform:translateY(-1px);box-shadow:0 8px 20px rgba(251,191,36,.3)}
+.btn-outline{background:transparent;color:var(--q-gold);border-color:var(--q-gold)}
+.btn-outline:hover{background:rgba(212,175,55,.1)}
+.btn-danger{background:var(--q-danger);color:white;border-color:var(--q-danger)}
+.btn-danger:hover{background:#dc2626}
+.btn-ghost{background:transparent;color:var(--q-sub);border-color:var(--q-ghost)}
+.btn-ghost:hover{background:var(--q-ghost)}
+
+.q-options {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  border: 0;
+  padding: 0;
+  margin: 0;
+}
+
+@media (max-width: 720px) {
+  .q-options {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.q-option {
+  position: relative;
+  display: block;
+  cursor: pointer;
+}
+
+.q-option input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.q-pill {
+  display: grid;
+  place-items: center;
+  height: 56px;
+  border-radius: 14px;
+  background: #0f1118;
+  border: 1px solid rgba(212, 175, 55, .25);
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: .2px;
+  transition: all .3s ease;
+  position: relative;
+  overflow: hidden;
+  text-align: center;
+  padding: 8px;
+  line-height: 1.3;
+}
+
+.q-pill::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(251, 191, 36, 0.2), transparent);
+  transition: left .5s ease;
+}
+
+.q-option:hover .q-pill::before {
+  left: 100%;
+}
+
+.q-option:hover .q-pill {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 18px rgba(0, 0, 0, .25);
+}
+
+.q-option input:focus-visible + .q-pill {
+  outline: 2px solid var(--q-ring);
+  outline-offset: 2px;
+}
+
+.q-option input:checked + .q-pill {
+  background: linear-gradient(135deg, #fbbf24, #f59e0b);
+  border-color: #f59e0b;
+  color: #0f1118;
+  box-shadow: 0 8px 20px rgba(251, 191, 36, .3);
+}
+
+.q-option input:checked + .q-pill::before {
+  display: none;
+}
+
+.q-actions {
+  display: flex;
+  justify-content: center;
+  margin-top: 2rem;
+}
+
+.q-actions .btn {
+  padding: 0.75rem 2rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+  border-radius: 12px;
+  transition: all 0.3s ease;
+  min-width: 200px;
+}
+
+.q-actions .btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.q-actions .btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+}
+
+.q-feedback {
+  text-align: center;
+  padding: 16px;
+  border-radius: 12px;
+  font-weight: 600;
+  margin: 16px 0;
+}
+
+.q-feedback.correct {
+  background: rgba(34, 197, 94, .1);
+  border: 1px solid rgba(34, 197, 94, .2);
+  color: #22c55e;
+}
+
+.q-feedback.incorrect {
+  background: rgba(239, 68, 68, .1);
+  border: 1px solid rgba(239, 68, 68, .2);
+  color: #ef4444;
+}
+
+.q-feedback.info {
+  background: rgba(59, 130, 246, .1);
+  border: 1px solid rgba(59, 130, 246, .2);
+  color: #3b82f6;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Normalize quarter labels to: "الجزء N — الربع <الاسم>"
+  try {
+    const names = ['','الأول','الثاني','الثالث','الرابع','الخامس','السادس','السابع','الثامن'];
+    const quarterInputs = document.querySelectorAll('input[name="quarter_selection"]');
+    quarterInputs.forEach(inp => {
+      const n = parseInt(inp.value, 10);
+      if (!isNaN(n) && n > 0) {
+        const juz = Math.floor((n - 1) / 8) + 1;
+        const qij = ((n - 1) % 8) + 1;
+        const pill = inp.nextElementSibling;
+        if (pill && pill.classList.contains('q-pill')) {
+          const qname = names[qij] || qij;
+          pill.textContent = `الجزء ${juz} — الربع ${qname}`;
+        }
+      }
+    });
+  } catch (e) { /* noop */ }
+  const endBtn = document.getElementById('endBtn');
+  const endModal = document.getElementById('endModal');
+  const endForm = document.getElementById('endForm');
+  const confirmEnd = document.getElementById('confirmEnd');
+  const cancelEnd = document.getElementById('cancelEnd');
+  const quarterForm = document.getElementById('quarterForm');
+  const pageForm = document.getElementById('pageForm');
+  const reportForm = document.getElementById('reportForm');
+  const givenField = document.getElementById('givenField');
+
+  // إنهاء الاختبار
+  if (endBtn) {
+  endBtn.addEventListener('click', () => {
+    endModal.setAttribute('aria-hidden', 'false');
+  });
+  }
+
+  if (confirmEnd) {
+  confirmEnd.addEventListener('click', () => {
+    endForm.submit();
+  });
+  }
+
+  if (cancelEnd) {
+  cancelEnd.addEventListener('click', () => {
+    endModal.setAttribute('aria-hidden', 'true');
+  });
+  }
+
+  // إغلاق النافذة المنبثقة عند النقر خارجها
+  if (endModal) {
+  endModal.addEventListener('click', (e) => {
+    if (e.target === endModal) {
+      endModal.setAttribute('aria-hidden', 'true');
+    }
+  });
+  }
+
+  // معالجة نموذج الربع
+  if (quarterForm) {
+    quarterForm.addEventListener('submit', function(e) {
+      const selectedQuarter = this.querySelector('input[name="quarter_selection"]:checked');
+      if (!selectedQuarter) {
+        e.preventDefault();
+        showToast('الرجاء اختيار ربع أولاً', 'error');
+        return;
+      }
+
+      // تعطيل الزر أثناء المعالجة
+      const submitBtn = this.querySelector('button[type="submit"]');
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'جاري التحقق...';
+
+      // تحديث حقل الإبلاغ
+      if (givenField) {
+        givenField.value = `ربع: ${selectedQuarter.value}`;
+      }
+
+      // السماح بإرسال النموذج بشكل طبيعي
+    });
+  }
+
+  // معالجة نموذج الصفحة
+  if (pageForm) {
+    pageForm.addEventListener('submit', function(e) {
+      const selectedPage = this.querySelector('input[name="page_in_quarter_selection"]:checked');
+      if (!selectedPage) {
+        e.preventDefault();
+        showToast('الرجاء اختيار صفحة أولاً', 'error');
+        return;
+      }
+
+      // تعطيل الزر أثناء المعالجة
+      const submitBtn = this.querySelector('button[type="submit"]');
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'جاري التحقق...';
+
+      // تحديث حقل الإبلاغ
+      if (givenField) {
+        const currentValue = givenField.value || '';
+        givenField.value = `${currentValue}, صفحة: ${selectedPage.value}`;
+      }
+
+      // السماح بإرسال النموذج بشكل طبيعي
+    });
+  }
+
+  // تحديث حقل الإبلاغ عند تغيير الاختيار
+  if (quarterForm) {
+    quarterForm.addEventListener('change', function() {
+      const selectedQuarter = this.querySelector('input[name="quarter_selection"]:checked');
+      if (selectedQuarter && givenField) {
+        givenField.value = `ربع: ${selectedQuarter.value}`;
+      }
+    });
+  }
+
+  if (pageForm) {
+    pageForm.addEventListener('change', function() {
+      const selectedPage = this.querySelector('input[name="page_in_quarter_selection"]:checked');
+      if (selectedPage && givenField) {
+        const currentValue = givenField.value || '';
+        if (currentValue.includes('ربع:')) {
+          givenField.value = `${currentValue}, صفحة: ${selectedPage.value}`;
+        } else {
+          givenField.value = `صفحة: ${selectedPage.value}`;
+        }
+      }
+    });
+  }
+
+  // إضافة تأثيرات بصرية للخيارات
+  const options = document.querySelectorAll('.q-option');
+  options.forEach(option => {
+    option.addEventListener('click', function() {
+      // إزالة التحديد من جميع الخيارات
+      options.forEach(opt => opt.classList.remove('selected'));
+      // إضافة التحديد للخيار المختار
+      this.classList.add('selected');
+    });
+  });
+
+  function showToast(message, type = 'info') {
+    // إنشاء toast بسيط إذا لم يكن موجوداً
+    let toast = document.getElementById('toast');
+    if (!toast) {
+      toast = document.createElement('div');
+      toast.id = 'toast';
+      toast.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 12px 20px;
+        border-radius: 8px;
+        color: white;
+        font-weight: 600;
+        z-index: 1000;
+        transition: all 0.3s ease;
+        transform: translateX(100%);
+      `;
+      document.body.appendChild(toast);
+    }
+    
+    // تعيين النص والنوع
+    toast.textContent = message;
+    toast.style.background = type === 'error' ? '#ef4444' : '#10b981';
+    toast.style.transform = 'translateX(0)';
+    
+    // إخفاء بعد 3 ثوان
+    setTimeout(() => {
+      toast.style.transform = 'translateX(100%)';
+    }, 3000);
+  }
+});
+</script>
+{% endblock %}

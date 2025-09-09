@@ -1,0 +1,28 @@
+{% extends 'core/base.html' %}
+{% load i18n %}
+
+{% block title %}Mutawatir — متواتر{% endblock %}
+
+{% block content %}
+<section class="hero home">
+  <div class="hero-inner">
+    <img src="/static/img/logo.png" alt="Mutawatir" class="logo">
+    <h1 class="hero-title">متواتر — Mutawatir</h1>
+    <p class="hero-subtitle">منصة متطورة لاختبار وتثبيت حفظ القرآن، وترسيخ صورة المصحف في الذاكرة.</p>
+    <div class="cta">
+      <a class="btn btn-primary" href="{% url 'core:login' %}">تسجيل الدخول</a>
+      <a class="btn btn-outline" href="{% url 'core:signup' %}">إنشاء حساب</a>
+    </div>
+  </div>
+</section>
+
+<section class="card" style="margin-top:1rem">
+  <h3>عن متواتر</h3>
+  <p>
+    "متواتر" منصة تفاعلية مبتكرة تهدف إلى مساعدة حفظة القرآن الكريم على اختبار وتقوية حفظهم، مع التركيز على الآيات المتشابهة.
+    توفر للمستخدمين اختبارات دقيقة تُبنى على اختيارهم للأجزاء أو الأرباع أو السور، مع عرض النتائج والتقييمات التفصيلية،
+    مما يساعدهم على اكتشاف نقاط القوة ومواطن النسيان، وتحسين أدائهم بأسلوب عملي وفعّال.
+    كما تساهم في ترسيخ صورة صفحات المصحف في الذاكرة، ليحفظ القارئ القرآن وكأنه يراه أمامه صفحةً صفحة.
+  </p>
+</section>
+{% endblock %}

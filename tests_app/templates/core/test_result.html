@@ -1,0 +1,481 @@
+{% extends "core/base.html" %}
+{% load static i18n arabic_extras highlight %}
+
+{% block title %}نتيجة الاختبار — متواتر{% endblock %}
+
+{% block content %}
+<style>
+  :root{
+    --r-text:#f3f4f6;
+    --r-sub:#9aa3b2;
+    --r-card:#11131d;
+    --r-gold:#d4af37;
+    --r-gold-2:#b88900;
+    --r-ring: rgba(212,175,55,.35);
+    --r-green:#22c55e;
+    --r-red:#ef4444;
+    --r-muted:#1d2230;
+    --r-shadow: 0 12px 36px rgba(0,0,0,.28);
+    --r-radius: 16px;
+  }
+
+  .r-wrap{max-width: 980px; margin: 20px auto; padding: 14px; color: var(--r-text); font-family: 'Cairo', 'Segoe UI', sans-serif}
+  .r-header{
+    border:1px solid rgba(212,175,55,.22);
+    background: linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.015));
+    border-radius: var(--r-radius);
+    box-shadow: var(--r-shadow);
+    padding: 20px 24px;
+    display: grid; gap: 16px;
+    margin-bottom: 24px;
+  }
+  .r-scope{color: var(--r-sub); font-weight: 800; font-size: 1.1rem; margin-bottom: 8px}
+
+  .r-top{
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 12px; align-items: center;
+  }
+  @media(max-width: 720px){ .r-top{grid-template-columns: 1fr} }
+
+  .r-score{
+    display:flex; gap:10px; align-items:center; flex-wrap:wrap;
+  }
+  .r-chip{
+    display:inline-flex; align-items:center; gap:.45rem;
+    background:#0f1118; color:var(--r-text);
+    border:1px solid rgba(255,255,255,.10);
+    border-radius: 999px; padding: .6rem 1rem; font-weight: 800;
+    font-size: 0.95rem;
+  }
+  .r-chip.ok{ border-color: rgba(34,197,94,.45) }
+  .r-chip.no{ border-color: rgba(239,68,68,.45) }
+
+  /* === شريط التقدم التفاعلي === */
+  .r-bar{
+    min-width: 220px; width: 100%;
+    height: 20px; background: var(--r-muted); border-radius: 999px; overflow: hidden;
+    border: 2px solid rgba(255,255,255,.1);
+    display: flex;
+    position: relative;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,.2);
+  }
+  .r-bar > span{
+    display: block; height: 100%; width: 0%;
+    transition: width 1.5s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+  }
+  .r-bar > .ok{ 
+    background: linear-gradient(90deg, #16a34a, #22c55e, #4ade80);
+    box-shadow: 0 0 10px rgba(34, 197, 94, 0.3);
+  }
+  .r-bar > .no{ 
+    background: linear-gradient(90deg, #ef4444, #f87171, #fca5a5);
+    box-shadow: 0 0 10px rgba(239, 68, 68, 0.3);
+  }
+  
+  /* تأثير اللمعان المتحرك */
+  .r-bar > span::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+    animation: shimmer 2s infinite;
+  }
+  
+  @keyframes shimmer {
+    0% { left: -100%; }
+    100% { left: 100%; }
+  }
+  
+  /* مؤشر النسبة المئوية */
+  .r-bar::before {
+    content: attr(data-percentage) '%';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: #fff;
+    font-weight: 900;
+    font-size: 0.8rem;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+    z-index: 10;
+  }
+
+  .r-actions{display:flex; gap:10px; flex-wrap:wrap; justify-content:flex-start}
+  .btn{
+    appearance:none; border:1px solid transparent; border-radius:12px;
+    padding: 10px 14px; font-weight: 900; cursor: pointer;
+  }
+  .btn-primary{background: linear-gradient(180deg,var(--r-gold),var(--r-gold-2)); color:#1a1200; border-color: rgba(212,175,55,.55)}
+  .btn-outline{background:#0f1118; color:var(--r-text); border-color: rgba(255,255,255,.12)}
+  .btn-ghost{background:#0f1118; color:var(--r-text); border-color: rgba(255,255,255,.08)}
+
+  /* قائمة النتائج */
+  .r-list{display:grid; gap:16px; margin-top: 20px}
+  .r-item{
+    background: linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.015));
+    border:1px solid rgba(255,255,255,.10);
+    border-radius: var(--r-radius);
+    box-shadow: var(--r-shadow);
+    padding: 18px 20px;
+    display:grid; gap:14px;
+    transition: all 0.3s ease;
+  }
+  .r-item:hover{
+    border-color: rgba(212,175,55,.2);
+    box-shadow: 0 16px 48px rgba(0,0,0,.35);
+  }
+  .r-head{display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap}
+  .r-phrase{margin:0; font-weight: 900; color:#fff; font-size: 1.1rem; line-height: 1.4}
+  .status{
+    font-weight:900; border-radius:10px; padding:.35rem .6rem;
+    border:1px solid rgba(255,255,255,.1);
+  }
+  .ok .status{ background: linear-gradient(135deg, rgba(34,197,94,.14), rgba(34,197,94,.08)); color:#eafff3; border-color:#22c55e }
+  .no .status{ background: linear-gradient(135deg, rgba(239,68,68,.14), rgba(239,68,68,.08)); color:#ffecec; border-color:#ef4444 }
+
+  .meta{
+    display:flex; gap:12px; flex-wrap:wrap; align-items:center;
+    color: var(--r-sub); font-weight: 800; margin-top: 8px
+  }
+  .m-chip{
+    border:1px solid rgba(255,255,255,.10); border-radius: 999px;
+    padding:.4rem .7rem; background:#0f1118; font-size: 0.9rem;
+  }
+
+  /* تفاصيل الأماكن */
+  details{border-top:1px dashed rgba(255,255,255,.12); padding-top: 8px}
+  summary{cursor:pointer; color: var(--r-gold); font-weight: 900}
+  .occ-list{list-style:none; padding: 8px 0 0; margin:0; display:grid; gap:10px}
+  .ayah{
+    background:#0f1118; border:1px solid rgba(255,255,255,.08);
+    border-radius:12px; padding:10px 12px; display:grid; gap:4px
+  }
+  .ayah-meta{color:var(--r-sub); font-size:.92rem; font-weight: 800}
+  .ayah-text{line-height: 1.9}
+
+  /* شريط أدوات القائمة */
+  .r-toolstrip{display:flex; gap:8px; align-items:center; margin-top: 6px}
+  .btn-sm{padding:.35rem .55rem; border-radius: 10px}
+
+  /* Toast صغير */
+  .toast{
+    position: fixed; inset-inline: 16px; bottom: 16px; z-index: 50;
+    display:none; padding:10px 12px; border-radius: 12px; font-weight: 800;
+    background:#0f1118; color:#fff; border:1px solid rgba(212,175,55,.4);
+    box-shadow: 0 10px 30px rgba(0,0,0,.35);
+  }
+  .toast.show{display:inline-block; animation: fadein .2s ease, fadeout .2s ease 2.6s forwards;}
+  @keyframes fadein{from{opacity:0; transform: translateY(6px)} to{opacity:1; transform: translateY(0)}}
+  @keyframes fadeout{to{opacity:0; transform: translateY(6px)}}
+
+  /* نموذج الإبلاغ */
+  .report-form{margin-top:.8rem;padding:.8rem;background:rgba(255,255,255,.02);border:1px solid rgba(212,175,55,.2);border-radius:8px;animation:slideDown .3s ease}
+  .report-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:.6rem}
+  .report-header h4{margin:0;color:#fff;font-size:.9rem;font-weight:600}
+  .btn-close{background:none;border:none;color:var(--q-sub);font-size:1.2rem;cursor:pointer;padding:0;width:24px;height:24px;display:flex;align-items:center;justify-content:center;border-radius:4px;transition:all .2s}
+  .btn-close:hover{background:rgba(255,255,255,.1);color:#fff}
+  .report-details{margin-bottom:.8rem;padding:.8rem;background:rgba(0,0,0,.3);border-radius:8px;font-size:.85rem;border:1px solid rgba(255,255,255,.05)}
+  .report-details p{margin:.3rem 0;color:var(--q-sub)}
+  .report-details strong{color:#fff}
+  .report-form-content .form-group{margin-bottom:.8rem}
+  .report-form-content label{display:block;margin-bottom:.4rem;color:#fff;font-size:.85rem;font-weight:500}
+  .report-form-content textarea{width:100%;padding:.6rem;background:rgba(255,255,255,.05);border:1px solid rgba(212,175,55,.3);border-radius:6px;color:#fff;font-size:.85rem;resize:vertical;min-height:60px;font-family:inherit}
+  .report-form-content textarea:focus{outline:none;border-color:var(--q-gold);box-shadow:0 0 0 2px rgba(212,175,55,.2)}
+  .report-form-content textarea::placeholder{color:var(--q-sub)}
+  .form-actions{display:flex;gap:.6rem;justify-content:flex-end}
+  .btn-primary{background:var(--q-gold);color:#000;border:none;padding:.5rem 1rem;border-radius:6px;font-weight:600;cursor:pointer;transition:all .2s}
+  .btn-primary:hover{background:#e6c547;transform:translateY(-1px)}
+  .btn-outline{background:transparent;color:var(--q-sub);border:1px solid rgba(255,255,255,.2);padding:.5rem 1rem;border-radius:6px;cursor:pointer;transition:all .2s}
+  .btn-outline:hover{background:rgba(255,255,255,.1);color:#fff;border-color:rgba(255,255,255,.4)}
+  @keyframes slideDown{from{opacity:0;transform:translateY(-10px)} to{opacity:1;transform:translateY(0)}}
+</style>
+
+<div class="r-wrap" dir="rtl">
+  <div id="toast" class="toast" aria-live="polite" aria-atomic="true"></div>
+  {% csrf_token %}
+
+  <header class="r-header">
+    <div class="r-scope">{{ scope_label }}</div>
+
+    <div class="r-top">
+      <div class="r-score">
+        <span class="r-chip">النتيجة: <b>{{ score|arabic_digits }}</b> / <b>{{ total|arabic_digits }}</b></span>
+        <span class="r-chip ok">صحيح: <b>{{ score|arabic_digits }}</b></span>
+        <span class="r-chip no">خطأ: <b>{{ wrong|arabic_digits }}</b></span>
+      </div>
+
+      <!-- شريط التقدم التفاعلي -->
+      <div class="r-bar" id="rBar" data-score="{{ score }}" data-total="{{ total }}" data-wrong="{{ wrong }}" data-percentage="0">
+        <span class="ok"></span>
+        <span class="no"></span>
+      </div>
+    </div>
+
+    <div class="r-actions">
+      <a class="btn btn-primary" href="{% url 'tests:similar_count:selection' %}">إعادة الاختبار</a>
+      <a class="btn btn-outline" href="{% url 'tests_app:tests_root' %}">اختبار جديد</a>
+      <a class="btn btn-ghost" href="{% url 'core:main_menu' %}">الرئيسية</a>
+      <button type="button" class="btn btn-ghost" id="toggleAll">إظهار كل التفاصيل</button>
+    </div>
+  </header>
+
+  <section class="r-list">
+    {% for item in detailed_results %}
+      {% with ga=item.given_answer|default_if_none:0 cc=item.correct_count|default_if_none:0 %}
+      <article class="r-item {% if ga|add:0 == cc|add:0 %}ok{% else %}no{% endif %}">
+      <div class="r-head">
+        <h3 class="r-phrase">{{ item.phrase }}</h3>
+        <span class="status">{% if ga|add:0 == cc|add:0 %}إجابة صحيحة{% else %}إجابة خاطئة{% endif %}</span>
+      </div>
+
+      <div class="meta">
+        <span class="m-chip">إجابة الطالب:
+          <b>{% if item.given_answer is not None %}{{ item.given_answer|arabic_digits }}{% else %}—{% endif %}</b>
+        </span>
+        <span class="m-chip">عدد المواضع: <b>{{ item.total_occurrences|arabic_digits }}</b></span>
+      </div>
+
+      <!-- تُفتح تلقائيًا لو الإجابة خاطئة -->
+      <details {% if ga|add:0 != cc|add:0 %}open{% endif %}>
+        <summary>عرض مواضع العبارة</summary>
+        <ol class="occ-list">
+          {% for a in item.occurrences %}
+          <li class="ayah">
+            <div class="ayah-meta">
+              {{ a.surah_name }} ({{ a.surah|arabic_digits }}:{{ a.number|arabic_digits }})
+              {% if a.juz_number %} — الجزء {{ a.juz_number|arabic_digits }}{% endif %}
+              {% if a.quarter_label %} — {{ a.quarter_label }}{% endif %}
+            </div>
+            <div class="ayah-text">{{ a.text|highlight_multiple:item.phrase }}</div>
+          </li>
+          {% endfor %}
+        </ol>
+      </details>
+
+      <!-- زر الإبلاغ -->
+      <div class="r-toolstrip">
+        <button type="button" class="btn btn-sm btn-ghost" onclick="toggleReportForm({{ forloop.counter }})">
+          إبلاغ عن مشكلة
+        </button>
+      </div>
+
+      <!-- نموذج الإبلاغ -->
+      <div id="reportForm{{ forloop.counter }}" class="report-form" style="display: none;">
+        <div class="report-header">
+          <h4>إبلاغ عن مشكلة في السؤال {{ forloop.counter }}</h4>
+          <button type="button" class="btn-close" onclick="toggleReportForm({{ forloop.counter }})">&times;</button>
+        </div>
+        <div class="report-details">
+          <p><strong>العبارة:</strong> {{ item.phrase }}</p>
+          <p><strong>إجابتك:</strong> {{ ga|arabic_digits }}</p>
+          <p><strong>الإجابة الصحيحة:</strong> {{ cc|arabic_digits }}</p>
+          <p><strong>عدد المواضع:</strong> {{ item.total_occurrences|arabic_digits }}</p>
+          <p><strong>المواضع:</strong></p>
+          <ul style="margin: 0.3rem 0; padding-right: 1rem; font-size: 0.8rem;">
+            {% for a in item.occurrences %}
+            <li>{{ a.surah_name }} ({{ a.surah|arabic_digits }}:{{ a.number|arabic_digits }})</li>
+            {% endfor %}
+          </ul>
+        </div>
+        <form class="report-form-content" onsubmit="submitReport(event, {{ forloop.counter }}, '{{ item.phrase|escapejs }}', '{{ ga }}', '{{ cc }}')">
+          <div class="form-group">
+            <label for="reportText{{ forloop.counter }}">وصف المشكلة:</label>
+            <textarea id="reportText{{ forloop.counter }}" name="text" rows="3" placeholder="اكتب وصفاً مفصلاً للمشكلة..." required></textarea>
+          </div>
+          <div class="form-actions">
+            <button type="button" class="btn btn-outline" onclick="toggleReportForm({{ forloop.counter }})">إلغاء</button>
+            <button type="submit" class="btn btn-primary">إرسال الإبلاغ</button>
+          </div>
+        </form>
+      </div>
+      </article>
+      {% endwith %}
+    {% empty %}
+      <div class="r-item">لا توجد تفاصيل لعرضها.</div>
+    {% endfor %}
+  </section>
+</div>
+
+<script>
+  (function(){
+    // شريط التقدم التفاعلي مع انيميشن
+    const bar = document.getElementById('rBar');
+    if (bar){
+      const score = parseInt(bar.dataset.score) || 0;
+      const total = parseInt(bar.dataset.total) || 1;
+      const wrong = parseInt(bar.dataset.wrong) || 0;
+      
+      const okPercent = (score / total) * 100;
+      const noPercent = (wrong / total) * 100;
+      
+      const okSpan = bar.querySelector('.ok');
+      const noSpan = bar.querySelector('.no');
+      
+      // تحديث النسبة المئوية
+      bar.dataset.percentage = Math.round(okPercent);
+      
+      // انيميشن العد التصاعدي
+      let currentOk = 0;
+      let currentNo = 0;
+      const duration = 2000; // 2 ثانية
+      const steps = 60; // 60 خطوة
+      const stepDuration = duration / steps;
+      const okStep = okPercent / steps;
+      const noStep = noPercent / steps;
+      
+      let step = 0;
+      const animate = () => {
+        if (step <= steps) {
+          currentOk = Math.min(okPercent, currentOk + okStep);
+          currentNo = Math.min(noPercent, currentNo + noStep);
+          
+          if (okSpan) okSpan.style.width = currentOk + '%';
+          if (noSpan) noSpan.style.width = currentNo + '%';
+          
+          // تحديث النسبة المئوية المعروضة
+          bar.dataset.percentage = Math.round(currentOk);
+          
+          step++;
+          setTimeout(animate, stepDuration);
+        } else {
+          // التأكد من الوصول للقيم النهائية
+          if (okSpan) okSpan.style.width = okPercent + '%';
+          if (noSpan) noSpan.style.width = noPercent + '%';
+          bar.dataset.percentage = Math.round(okPercent);
+        }
+      };
+      
+      // بدء الانيميشن بعد تأخير قصير
+      setTimeout(animate, 300);
+    }
+
+    // زر إظهار/إخفاء كل التفاصيل
+    const toggleAll = document.getElementById('toggleAll');
+    const details = document.querySelectorAll('details');
+    let allOpen = false;
+
+    if (toggleAll && details.length > 0){
+      toggleAll.addEventListener('click', function(){
+        allOpen = !allOpen;
+        details.forEach(d => d.open = allOpen);
+        toggleAll.textContent = allOpen ? 'إخفاء كل التفاصيل' : 'إظهار كل التفاصيل';
+      });
+    }
+
+    // Toast للإشعارات
+    function showToast(message){
+      const toast = document.getElementById('toast');
+      if (toast){
+        toast.textContent = message;
+        toast.classList.remove('show');
+        void toast.offsetWidth; // إعادة تدفق
+        toast.classList.add('show');
+        setTimeout(() => toast.classList.remove('show'), 3000);
+      }
+    }
+
+    // إظهار رسالة ترحيب
+    const score = {{ score|default:0 }};
+    const total = {{ total|default:0 }};
+    const percentage = total > 0 ? Math.round((score / total) * 100) : 0;
+    
+    let message = '';
+    if (percentage >= 90) message = 'ممتاز! 🏆';
+    else if (percentage >= 70) message = 'جيد جداً! 🎉';
+    else if (percentage >= 50) message = 'ليس سيئاً! 👍';
+    else message = 'حاول مرة أخرى! 💪';
+    
+    if (message) showToast(message);
+
+    // دالة إظهار/إخفاء نموذج الإبلاغ
+    window.toggleReportForm = function(questionNumber) {
+      const form = document.getElementById('reportForm' + questionNumber);
+      if (form) {
+        const isVisible = form.style.display !== 'none';
+        form.style.display = isVisible ? 'none' : 'block';
+        
+        // إذا كان يظهر، نركز على textarea
+        if (!isVisible) {
+          setTimeout(() => {
+            const textarea = form.querySelector('textarea');
+            if (textarea) textarea.focus();
+          }, 100);
+        }
+      }
+    };
+
+    // دالة إرسال الإبلاغ
+    window.submitReport = function(event, questionNumber, phrase, given, correct) {
+      event.preventDefault();
+      
+      const form = event.target;
+      const textarea = form.querySelector('textarea');
+      const text = textarea.value.trim();
+      
+      if (!text) {
+        showToast('يرجى كتابة وصف للمشكلة');
+        textarea.focus();
+        return;
+      }
+
+      // تعطيل النموذج أثناء الإرسال
+      const submitBtn = form.querySelector('button[type="submit"]');
+      const originalText = submitBtn.textContent;
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'جاري الإرسال...';
+
+      // جمع معلومات إضافية من النموذج
+      const reportDetails = form.closest('.report-form').querySelector('.report-details');
+      const occurrences = [];
+      const occurrenceList = reportDetails.querySelectorAll('ul li');
+      occurrenceList.forEach(li => {
+        occurrences.push(li.textContent.trim());
+      });
+
+      const formData = new FormData();
+      formData.append('phrase', phrase);
+      formData.append('question_number', questionNumber);
+      formData.append('given', given);
+      formData.append('correct', correct);
+      formData.append('text', text);
+      formData.append('from', 'result');
+      formData.append('occurrences', JSON.stringify(occurrences));
+      formData.append('occurrence_count', occurrenceList.length);
+      formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+
+      fetch('{% url "tests:similar_count:report" %}', {
+        method: 'POST',
+        body: formData,
+        headers: {
+          'X-Requested-With': 'XMLHttpRequest'
+        }
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.ok) {
+          showToast('تم إرسال الإبلاغ بنجاح. شكراً لك!');
+          // إخفاء النموذج ومسح النص
+          toggleReportForm(questionNumber);
+          textarea.value = '';
+        } else {
+          showToast('تعذّر إرسال الإبلاغ. حاول مرة أخرى.');
+        }
+      })
+      .catch(() => {
+        showToast('تعذّر الاتصال. تأكد من الشبكة وحاول مجدداً.');
+      })
+      .finally(() => {
+        // إعادة تفعيل النموذج
+        submitBtn.disabled = false;
+        submitBtn.textContent = originalText;
+      });
+    };
+  })();
+</script>
+{% endblock %}

@@ -1,0 +1,215 @@
+{% extends "core/base.html" %}
+{% load static i18n %}
+
+{% block title %}تسجيل الدخول — متواتر{% endblock %}
+
+{% block content %}
+<style>
+  .auth-shell{
+    min-height: 72vh;
+    display: grid;
+    place-items: center;
+  }
+  .auth-card{
+    width: 100%;
+    max-width: 420px;
+    background: linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.015));
+    border: 1px solid rgba(255,255,255,.10);
+    border-radius: 16px;
+    box-shadow: 0 18px 48px rgba(0,0,0,.28);
+    padding: 1.1rem 1.15rem;
+  }
+  .auth-title{margin: .25rem 0 .9rem; color: #fff; font-weight: 900; letter-spacing: .2px; text-align:center}
+  .auth-lead{margin: -.35rem 0 1rem; color: var(--muted); text-align:center}
+
+  .form-control{display:grid; gap:.35rem; margin:.55rem 0}
+  .form-control label{font-weight:800; color:#f1f6f3}
+  .input{width:100%; background:#09130f; border:1px solid rgba(255,255,255,.16); color:var(--text); border-radius:12px; padding:.7rem .85rem}
+  .input::placeholder{color:#dbe7e1; opacity:.9}
+
+  .pwd-wrap{position:relative}
+  .input.has-eye{padding-left: 2.3rem;}
+  .eye-toggle{
+    position:absolute; left:.45rem; top:50%; transform: translateY(-50%);
+    display:grid; place-items:center;
+    width: 28px; height: 28px;
+    border: 1px solid rgba(255,255,255,.16);
+    background:#0a1713; color: var(--text);
+    border-radius: 8px; cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .eye-toggle:hover {
+    background: rgba(255,255,255,.1);
+    border-color: rgba(255,255,255,.3);
+    transform: translateY(-50%) scale(1.05);
+  }
+  .eye-toggle:active {
+    transform: translateY(-50%) scale(0.95);
+  }
+  .eye-toggle svg{width:18px; height:18px; display:block; transition: all 0.3s ease}
+  .eye-toggle .icon-off{display:none}
+  .eye-toggle[aria-pressed="true"] .icon-on{display:none}
+  .eye-toggle[aria-pressed="true"] .icon-off{display:block}
+
+  .auth-actions{display:flex; gap:.6rem; align-items:center; justify-content:center; margin-top: .9rem}
+  .auth-links{display:flex; gap:.5rem; flex-wrap:wrap}
+  .auth-links a{color:var(--accent); font-weight:800}
+  .hint{ color:var(--muted); font-size:.92rem }
+  
+  /* تحسين checkbox تذكرني */
+  .remember-me-container {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.5rem 0.75rem;
+    background: rgba(255,255,255,.02);
+    border: 1px solid rgba(255,255,255,.08);
+    border-radius: 10px;
+    transition: all 0.3s ease;
+  }
+  
+  .remember-me-container:hover {
+    background: rgba(255,255,255,.05);
+    border-color: rgba(255,255,255,.15);
+  }
+  
+  .form-check-input {
+    width: 18px;
+    height: 18px;
+    margin: 0;
+    accent-color: var(--accent);
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+  
+  .form-check-input:hover {
+    transform: scale(1.1);
+  }
+  
+  .form-check-input:checked {
+    transform: scale(1.1);
+  }
+  
+  .remember-me-label {
+    margin: 0;
+    font-weight: 600;
+    color: var(--text);
+    cursor: pointer;
+    user-select: none;
+    transition: color 0.3s ease;
+  }
+  
+  .remember-me-label:hover {
+    color: #fff;
+  }
+</style>
+
+<div class="auth-shell">
+  <div class="auth-card">
+    <h1 class="auth-title">تسجيل الدخول</h1>
+    <p class="auth-lead">ادخل بياناتك للمتابعة.</p>
+
+    <form method="post" action="{% url 'core:login' %}">
+      {% csrf_token %}
+      
+      <!-- عرض رسائل الخطأ والنجاح -->
+      {% if messages %}
+        {% for message in messages %}
+          {% if message.tags == 'success' %}
+            <div class="alert alert-{{ message.tags }}" style="background: rgba(34,197,94,.1); border: 1px solid rgba(34,197,94,.3); color: #22c55e; padding: 12px 16px; border-radius: 12px; margin-bottom: 16px; font-weight: 600;">
+              {{ message }}
+            </div>
+          {% elif message.tags == 'error' %}
+            <div class="alert alert-{{ message.tags }}" style="background: rgba(239,68,68,.1); border: 1px solid rgba(239,68,68,.3); color: #ef4444; padding: 12px 16px; border-radius: 12px; margin-bottom: 16px; font-weight: 600;">
+              {{ message }}
+            </div>
+          {% elif message.tags == 'warning' %}
+            <div class="alert alert-{{ message.tags }}" style="background: rgba(245,158,11,.1); border: 1px solid rgba(245,158,11,.3); color: #f59e0b; padding: 12px 16px; border-radius: 12px; margin-bottom: 16px; font-weight: 600;">
+              {{ message }}
+            </div>
+          {% else %}
+            <div class="alert alert-{{ message.tags }}" style="background: rgba(59,130,246,.1); border: 1px solid rgba(59,130,246,.3); color: #3b82f6; padding: 12px 16px; border-radius: 12px; margin-bottom: 16px; font-weight: 600;">
+              {{ message }}
+            </div>
+          {% endif %}
+        {% endfor %}
+      {% endif %}
+      
+      {% if form.errors %}
+        <div class="alert alert-error" style="background: rgba(239,68,68,.1); border: 1px solid rgba(239,68,68,.3); color: #ef4444; padding: 12px 16px; border-radius: 12px; margin-bottom: 16px; font-weight: 600;">
+          {% for field, errors in form.errors.items %}
+            {% for error in errors %}
+              <div>{{ error }}</div>
+            {% endfor %}
+          {% endfor %}
+        </div>
+      {% endif %}
+      
+      <div class="form-control">
+        <label for="id_username">اسم المستخدم أو البريد الإلكتروني</label>
+        <input id="id_username" name="username" class="input" placeholder="مثال: mohamed139 أو example@gmail.com" required autofocus>
+        <div class="hint">يمكنك تسجيل الدخول باسم المستخدم أو البريد الإلكتروني.</div>
+      </div>
+
+      <div class="form-control">
+        <label for="id_password">كلمة المرور</label>
+        <div class="pwd-wrap">
+          <input id="id_password" name="password" type="password" class="input has-eye" placeholder="••••••••" required>
+          <button type="button" id="togglePwd" class="eye-toggle" aria-label="إظهار كلمة المرور" aria-pressed="false">
+            <!-- عين -->
+            <svg class="icon-on" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z" stroke="currentColor" stroke-width="2"/>
+              <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/>
+            </svg>
+            <!-- عين متشطّبة -->
+            <svg class="icon-off" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M3 3l18 18" stroke="currentColor" stroke-width="2"/>
+              <path d="M2 12s3.5-6 10-6c-2.3 0-4.2.7-5.7 1.7M22 12s-3.5 6-10 6c-2.3 0-4.2-.7-5.7-1.7" stroke="currentColor" stroke-width="2"/>
+              <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="form-control" style="margin-bottom: 1rem;">
+        <div class="remember-me-container">
+          <input type="checkbox" id="id_remember_me" name="remember_me" class="form-check-input">
+          <label for="id_remember_me" class="remember-me-label">تذكرني</label>
+        </div>
+      </div>
+
+      <div class="auth-actions">
+        <button class="btn btn-primary" type="submit">تسجيل الدخول</button>
+      </div>
+
+      <div class="auth-actions">
+        <div class="auth-links">
+          <a href="{% url 'core:signup' %}">ليس لديك حساب؟ أنشئ حسابًا</a>
+        </div>
+      </div>
+      
+      <div class="auth-actions">
+
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  (function(){
+    const btn = document.getElementById('togglePwd');
+    const input = document.getElementById('id_password');
+    if(btn && input){
+      btn.addEventListener('click', ()=>{
+        const show = input.getAttribute('type') === 'password';
+        input.setAttribute('type', show ? 'text' : 'password');
+        btn.setAttribute('aria-pressed', show ? 'true' : 'false');
+        btn.setAttribute('aria-label', show ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور');
+      });
+    }
+  })();
+  
+  // دالة اختبار الإشعارات
+
+</script>
+{% endblock %}

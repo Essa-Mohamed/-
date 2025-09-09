@@ -1,0 +1,244 @@
+{% extends "core/base.html" %}
+{% load static i18n %}
+
+{% block title %}مواضع العبارة — متواتر{% endblock %}
+
+{% block content %}
+<style>
+  .page-shell {
+    min-height: 72vh;
+    display: grid;
+    gap: 1rem;
+    align-content: start;
+  }
+  
+  .header-card {
+    padding: 1.5rem;
+    border-radius: 16px;
+    background: linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.015));
+    border: 1px solid rgba(255,255,255,.10);
+    box-shadow: 0 14px 36px rgba(0,0,0,.22);
+  }
+  
+  .header-card h1 {
+    margin: 0 0 1rem 0;
+    color: #fff;
+    font-weight: 900;
+    font-size: 1.8rem;
+  }
+  
+  .header-card p {
+    margin: 0;
+    color: rgba(255,255,255,.8);
+    font-size: 1rem;
+    line-height: 1.6;
+  }
+  
+  .phrase-info {
+    display: inline-block;
+    padding: 1rem 1.5rem;
+    background: linear-gradient(135deg, #22c55e, #16a34a);
+    color: #fff;
+    border-radius: 12px;
+    font-weight: 700;
+    margin: 1rem 0;
+    font-size: 1.1rem;
+    text-align: center;
+    max-width: 100%;
+    word-break: break-word;
+  }
+  
+  .positions-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin: 1rem 0;
+  }
+  
+  .position-item {
+    padding: 1.5rem;
+    border-radius: 16px;
+    background: linear-gradient(135deg, rgba(255,255,255,.05), rgba(255,255,255,.02));
+    border: 1px solid rgba(255,255,255,.1);
+    text-align: center;
+    transition: all 0.3s ease;
+    color: #fff;
+    font-weight: 700;
+    text-decoration: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    min-height: 120px;
+    justify-content: center;
+  }
+  
+  .position-item:hover:not(.disabled) {
+    transform: translateY(-2px);
+    background: linear-gradient(135deg, rgba(255,255,255,.1), rgba(255,255,255,.05));
+    border-color: rgba(255,255,255,.2);
+    box-shadow: 0 8px 25px rgba(0,0,0,.15);
+  }
+  
+  .position-item.current {
+    background: linear-gradient(135deg, #22c55e, #16a34a);
+    border-color: #22c55e;
+    color: #fff;
+    box-shadow: 0 4px 12px rgba(34,197,94,.3);
+  }
+  
+  .position-item.completed {
+    background: linear-gradient(135deg, #3b82f6, #2563eb);
+    border-color: #3b82f6;
+    color: #fff;
+  }
+  
+  .position-item.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background: rgba(255,255,255,.02);
+    border-color: rgba(255,255,255,.05);
+  }
+  
+  .position-item.disabled:hover {
+    transform: none;
+    box-shadow: none;
+  }
+  
+  .position-number {
+    font-size: 2rem;
+    font-weight: 900;
+    color: #22c55e;
+  }
+  
+  .position-item.current .position-number {
+    color: #fff;
+  }
+  
+  .position-item.completed .position-number {
+    color: #fff;
+  }
+  
+  .position-label {
+    font-size: 1rem;
+    opacity: 0.9;
+  }
+  
+  .position-status {
+    font-size: 0.8rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 6px;
+    background: rgba(255,255,255,.1);
+    border: 1px solid rgba(255,255,255,.2);
+  }
+  
+  .position-item.current .position-status {
+    background: rgba(255,255,255,.2);
+    border-color: rgba(255,255,255,.3);
+  }
+  
+  .position-item.completed .position-status {
+    background: rgba(255,255,255,.2);
+    border-color: rgba(255,255,255,.3);
+  }
+  
+  .btn {
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    border: none;
+    font-weight: 700;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  
+  .btn-primary {
+    background: linear-gradient(135deg, #22c55e, #16a34a);
+    color: #fff;
+    box-shadow: 0 4px 12px rgba(34,197,94,.3);
+  }
+  
+  .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(34,197,94,.4);
+  }
+  
+  .btn-outline {
+    background: transparent;
+    color: #fff;
+    border: 2px solid rgba(255,255,255,.3);
+  }
+  
+  .btn-outline:hover {
+    background: rgba(255,255,255,.1);
+    border-color: rgba(255,255,255,.5);
+  }
+  
+  .instructions {
+    padding: 1rem;
+    border-radius: 12px;
+    background: rgba(255,255,255,.05);
+    border: 1px solid rgba(255,255,255,.1);
+    margin: 1rem 0;
+  }
+  
+  .instructions h3 {
+    margin: 0 0 0.5rem 0;
+    color: #22c55e;
+    font-weight: 700;
+  }
+  
+  .instructions p {
+    margin: 0;
+    color: rgba(255,255,255,.8);
+    line-height: 1.6;
+  }
+</style>
+
+<div class="page-shell">
+  <div class="header-card">
+    <h1>📍 مواضع العبارة</h1>
+    <p>اختر الموضع الذي تريد العمل عليه. سيتم توجيهك لاختيار الجزء والربع المناسب.</p>
+    
+    <div class="phrase-info">
+      "{{ question.phrase_text|default:question.phrase|default:"العبارة" }}"
+    </div>
+  </div>
+
+  <div class="instructions">
+    <h3>📋 تعليمات الاختبار</h3>
+    <p>اختر الموضع الذي تريد اختباره. لكل موضع ستحتاج لاختيار الجزء والربع الذي يحتوي عليه. ابدأ بالموضع الحالي (الأخضر) أو اختر أي موضع آخر.</p>
+  </div>
+
+  <div class="positions-grid">
+    {% for position in positions %}
+      {% if position.status == 'current' %}
+        <a href="{% url 'tests:similar_on_pages:selection' %}" class="position-item current">
+          <div class="position-number">{{ position.arabic_number }}</div>
+          <div class="position-label">الموضع</div>
+          <div class="position-status">الحالي</div>
+        </a>
+      {% elif position.status == 'completed' %}
+        <div class="position-item completed">
+          <div class="position-number">{{ position.arabic_number }}</div>
+          <div class="position-label">الموضع</div>
+          <div class="position-status">مكتمل ✓</div>
+        </div>
+      {% else %}
+        <a href="{% url 'tests:similar_on_pages:selection' %}?position={{ position.number }}" class="position-item">
+          <div class="position-number">{{ position.arabic_number }}</div>
+          <div class="position-label">الموضع</div>
+          <div class="position-status">في الانتظار</div>
+        </a>
+      {% endif %}
+    {% endfor %}
+  </div>
+  
+  <div style="text-align: center; margin-top: 2rem;">
+    <a href="{% url 'core:main_menu' %}" class="btn btn-outline">العودة للرئيسية</a>
+  </div>
+</div>
+{% endblock %}

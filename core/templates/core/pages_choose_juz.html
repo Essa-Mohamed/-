@@ -1,0 +1,630 @@
+{% extends "core/base.html" %}
+{% load static i18n arabic_extras %}
+
+{% block title %}اختيار الجزء — متواتر{% endblock %}
+
+{% block content %}
+<style>
+  .page-shell {
+    min-height: 72vh;
+    display: grid;
+    gap: 1rem;
+    align-content: start;
+  }
+  
+  .header-card {
+    padding: 1.5rem;
+    border-radius: 16px;
+    background: linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.015));
+    border: 1px solid rgba(255,255,255,.10);
+    box-shadow: 0 14px 36px rgba(0,0,0,.22);
+  }
+  
+  .header-card h1 {
+    margin: 0 0 1rem 0;
+    color: #fff;
+    font-weight: 900;
+    font-size: 1.8rem;
+  }
+  
+  .header-card p {
+    margin: 0;
+    color: rgba(255,255,255,.8);
+    font-size: 1rem;
+    line-height: 1.6;
+  }
+  
+  .phrase-info {
+    display: inline-block;
+    padding: 1rem 1.5rem;
+    background: linear-gradient(135deg, #22c55e, #16a34a);
+    color: #fff;
+    border-radius: 12px;
+    font-weight: 700;
+    margin: 1rem 0;
+    font-size: 1.1rem;
+    text-align: center;
+    max-width: 100%;
+    word-break: break-word;
+  }
+  
+  .juz-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 1rem;
+    margin: 1rem 0;
+  }
+  
+  .juz-item {
+    padding: 1rem;
+    border-radius: 12px;
+    background: linear-gradient(135deg, rgba(255,255,255,.05), rgba(255,255,255,.02));
+    border: 1px solid rgba(255,255,255,.1);
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    color: #fff;
+    font-weight: 700;
+    font-size: 1.1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    min-height: 100px;
+    justify-content: center;
+  }
+  
+  .juz-number {
+    font-size: 1.2rem;
+    font-weight: 900;
+    color: #22c55e;
+  }
+  
+  .juz-name {
+    font-size: 0.9rem;
+    opacity: 0.9;
+    line-height: 1.3;
+  }
+  
+  .juz-status {
+    font-size: 0.8rem;
+    color: #f87171;
+    font-weight: 600;
+    margin-top: 0.3rem;
+  }
+  
+  .juz-warning {
+    font-size: 0.75rem;
+    color: #fbbf24;
+    font-weight: 500;
+    margin-top: 0.2rem;
+    opacity: 0.8;
+  }
+  
+  .juz-item:hover:not(.disabled) {
+    transform: translateY(-2px);
+    background: linear-gradient(135deg, rgba(255,255,255,.1), rgba(255,255,255,.05));
+    border-color: rgba(255,255,255,.2);
+    box-shadow: 0 8px 25px rgba(0,0,0,.15);
+  }
+  
+  .juz-item.disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+    background: linear-gradient(135deg, rgba(239,68,68,0.1), rgba(239,68,68,0.05));
+    border-color: rgba(239,68,68,0.3);
+    position: relative;
+  }
+  
+  .juz-item.disabled::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(45deg, transparent 30%, rgba(239,68,68,0.1) 50%, transparent 70%);
+    border-radius: 12px;
+    pointer-events: none;
+  }
+  
+  .juz-item.disabled:hover {
+    transform: none;
+    box-shadow: none;
+  }
+  
+  .btn {
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    border: none;
+    font-weight: 700;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  
+  .btn-primary {
+    background: linear-gradient(135deg, #22c55e, #16a34a);
+    color: #fff;
+    box-shadow: 0 4px 12px rgba(34,197,94,.3);
+  }
+  
+  .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(34,197,94,.4);
+  }
+  
+  .btn-outline {
+    background: transparent;
+    color: #fff;
+    border: 2px solid rgba(255,255,255,.3);
+  }
+  
+  .btn-outline:hover {
+    background: rgba(255,255,255,.1);
+    border-color: rgba(255,255,255,.5);
+  }
+  
+  .no-juz-message {
+    padding: 2rem;
+    text-align: center;
+    color: rgba(255,255,255,.7);
+    background: rgba(255,255,255,.03);
+    border-radius: 12px;
+    border: 1px solid rgba(255,255,255,.1);
+  }
+  
+  .no-juz-message h3 {
+    margin: 0 0 1rem 0;
+    color: #f87171;
+    font-weight: 700;
+  }
+  
+     .no-juz-message p {
+     margin: 0;
+     line-height: 1.6;
+   }
+   
+   .disabled-juz-warning {
+     display: flex;
+     align-items: center;
+     gap: 1rem;
+     padding: 1.5rem;
+     background: linear-gradient(135deg, rgba(239,68,68,0.1), rgba(239,68,68,0.05));
+     border: 1px solid rgba(239,68,68,0.3);
+     border-radius: 12px;
+     margin: 1rem 0;
+     animation: warningPulse 2s ease-in-out infinite;
+   }
+   
+   .warning-icon {
+     font-size: 2rem;
+     color: #ef4444;
+   }
+   
+   .warning-content h3 {
+     margin: 0 0 0.5rem 0;
+     color: #ef4444;
+     font-weight: 700;
+     font-size: 1.1rem;
+   }
+   
+   .warning-content p {
+     margin: 0;
+     color: rgba(255,255,255,0.8);
+     line-height: 1.5;
+     font-size: 0.95rem;
+   }
+   
+   .warning-details {
+     margin-top: 0.75rem;
+     padding: 0.5rem 0.75rem;
+     background: rgba(239,68,68,0.1);
+     border: 1px solid rgba(239,68,68,0.2);
+     border-radius: 8px;
+     color: rgba(255,255,255,0.9);
+     font-size: 0.9rem;
+     font-weight: 600;
+   }
+   
+   @keyframes warningPulse {
+     0%, 100% { transform: scale(1); }
+     50% { transform: scale(1.02); }
+   }
+   
+   /* تحسين شكل المواضع */
+   .positions-tracker {
+     background: linear-gradient(135deg, rgba(34,197,94,0.1), rgba(34,197,94,0.05));
+     border: 1px solid rgba(34,197,94,0.2);
+     border-radius: 16px;
+     padding: 1.5rem;
+     margin: 1.5rem 0;
+   }
+   
+   .positions-header {
+     display: flex;
+     justify-content: space-between;
+     align-items: center;
+     margin-bottom: 1rem;
+     padding-bottom: 0.75rem;
+     border-bottom: 1px solid rgba(34,197,94,0.2);
+   }
+   
+   .positions-header span:first-child {
+     color: #22c55e;
+     font-weight: 700;
+     font-size: 1.1rem;
+   }
+   
+   .positions-count {
+     background: linear-gradient(135deg, #22c55e, #16a34a);
+     color: white;
+     padding: 0.5rem 1rem;
+     border-radius: 20px;
+     font-weight: 800;
+     font-size: 0.9rem;
+   }
+   
+   .positions-list {
+     display: grid;
+     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+     gap: 1rem;
+   }
+   
+   .position-item {
+     display: flex;
+     align-items: center;
+     gap: 1rem;
+     padding: 1rem;
+     background: rgba(255,255,255,0.03);
+     border: 1px solid rgba(255,255,255,0.1);
+     border-radius: 12px;
+     transition: all 0.3s ease;
+   }
+   
+   .position-item:hover {
+     background: rgba(255,255,255,0.06);
+     border-color: rgba(255,255,255,0.2);
+     transform: translateY(-2px);
+   }
+   
+   .position-item.completed {
+     background: linear-gradient(135deg, rgba(34,197,94,0.1), rgba(34,197,94,0.05));
+     border-color: rgba(34,197,94,0.3);
+   }
+   
+   .position-item.current {
+     background: linear-gradient(135deg, rgba(251,191,36,0.1), rgba(251,191,36,0.05));
+     border-color: rgba(251,191,36,0.3);
+     animation: currentPulse 2s ease-in-out infinite;
+   }
+   
+   .position-number {
+     background: linear-gradient(135deg, #22c55e, #16a34a);
+     color: white;
+     width: 32px;
+     height: 32px;
+     border-radius: 50%;
+     display: flex;
+     align-items: center;
+     justify-content: center;
+     font-weight: 800;
+     font-size: 0.9rem;
+   }
+   
+   .position-item.completed .position-number {
+     background: linear-gradient(135deg, #22c55e, #16a34a);
+   }
+   
+   .position-item.current .position-number {
+     background: linear-gradient(135deg, #fbbf24, #f59e0b);
+   }
+   
+   .position-label {
+     color: rgba(255,255,255,0.9);
+     font-weight: 600;
+     font-size: 1rem;
+     flex: 1;
+   }
+   
+   .position-status {
+     padding: 0.5rem 0.75rem;
+     border-radius: 8px;
+     font-weight: 700;
+     font-size: 0.85rem;
+     min-width: 80px;
+     text-align: center;
+   }
+   
+   .position-status.completed {
+     background: linear-gradient(135deg, #22c55e, #16a34a);
+     color: white;
+   }
+   
+   .position-status.current {
+     background: linear-gradient(135deg, #fbbf24, #f59e0b);
+     color: #1f2937;
+   }
+   
+   .position-status.upcoming {
+     background: rgba(255,255,255,0.1);
+     color: rgba(255,255,255,0.7);
+     border: 1px solid rgba(255,255,255,0.2);
+   }
+   
+   @keyframes currentPulse {
+     0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(251,191,36,0.4); }
+     50% { transform: scale(1.02); box-shadow: 0 0 0 8px rgba(251,191,36,0); }
+   }
+   
+   /* شريط التقدم */
+   .progress-tracker {
+     display: flex;
+     align-items: center;
+     justify-content: center;
+     gap: 0.5rem;
+     margin: 1.5rem 0;
+     padding: 1rem;
+     background: rgba(255,255,255,.03);
+     border-radius: 12px;
+     border: 1px solid rgba(255,255,255,.1);
+   }
+   
+   .progress-step {
+     display: flex;
+     flex-direction: column;
+     align-items: center;
+     gap: 0.5rem;
+     opacity: 0.5;
+     transition: all 0.3s ease;
+   }
+   
+   .progress-step.active {
+     opacity: 1;
+   }
+   
+   .progress-step.completed {
+     opacity: 0.8;
+   }
+   
+   .step-number {
+     width: 32px;
+     height: 32px;
+     border-radius: 50%;
+     background: rgba(255,255,255,.1);
+     border: 2px solid rgba(255,255,255,.2);
+     display: flex;
+     align-items: center;
+     justify-content: center;
+     font-weight: 700;
+     font-size: 0.9rem;
+     color: #fff;
+   }
+   
+   .progress-step.active .step-number {
+     background: linear-gradient(135deg, #22c55e, #16a34a);
+     border-color: #22c55e;
+     box-shadow: 0 0 15px rgba(34,197,94,.3);
+   }
+   
+   .progress-step.completed .step-number {
+     background: linear-gradient(135deg, #3b82f6, #2563eb);
+     border-color: #3b82f6;
+   }
+   
+   .step-label {
+     font-size: 0.8rem;
+     color: rgba(255,255,255,.8);
+     font-weight: 600;
+     text-align: center;
+     white-space: nowrap;
+   }
+   
+   .progress-line {
+     width: 40px;
+     height: 2px;
+     background: rgba(255,255,255,.2);
+     border-radius: 1px;
+   }
+   
+   .progress-step.completed + .progress-line {
+     background: linear-gradient(90deg, #3b82f6, rgba(255,255,255,.2));
+   }
+   
+   /* شريط تقدم المواضع */
+   .positions-tracker {
+     margin: 1.5rem 0;
+     padding: 1.2rem;
+     background: rgba(255,255,255,.03);
+     border-radius: 12px;
+     border: 1px solid rgba(255,255,255,.1);
+   }
+   
+   .positions-header {
+     display: flex;
+     justify-content: space-between;
+     align-items: center;
+     margin-bottom: 1rem;
+     color: rgba(255,255,255,.9);
+     font-weight: 700;
+   }
+   
+   .positions-count {
+     background: linear-gradient(135deg, #f59e0b, #d97706);
+     color: #fff;
+     padding: 0.3rem 0.8rem;
+     border-radius: 20px;
+     font-size: 0.9rem;
+   }
+   
+   .positions-list {
+     display: flex;
+     gap: 0.8rem;
+     flex-wrap: wrap;
+     justify-content: center;
+   }
+   
+   .position-item {
+     display: flex;
+     flex-direction: column;
+     align-items: center;
+     gap: 0.5rem;
+     padding: 0.8rem;
+     border-radius: 10px;
+     background: rgba(255,255,255,.05);
+     border: 1px solid rgba(255,255,255,.1);
+     min-width: 80px;
+     transition: all 0.3s ease;
+   }
+   
+   .position-item.current {
+     background: linear-gradient(135deg, #22c55e, #16a34a);
+     border-color: #22c55e;
+     box-shadow: 0 0 15px rgba(34,197,94,.3);
+   }
+   
+   .position-item.completed {
+     background: linear-gradient(135deg, #3b82f6, #2563eb);
+     border-color: #3b82f6;
+   }
+   
+   .position-number {
+     width: 28px;
+     height: 28px;
+     border-radius: 50%;
+     background: rgba(255,255,255,.2);
+     border: 2px solid rgba(255,255,255,.3);
+     display: flex;
+     align-items: center;
+     justify-content: center;
+     font-weight: 900;
+     font-size: 0.8rem;
+     color: #fff;
+   }
+   
+   .position-item.current .position-number,
+   .position-item.completed .position-number {
+     background: rgba(255,255,255,.9);
+     color: #1b1b1b;
+     border-color: #fff;
+   }
+   
+   .position-label {
+     font-size: 0.8rem;
+     font-weight: 700;
+     color: rgba(255,255,255,.9);
+   }
+   
+   .position-status {
+     font-size: 0.7rem;
+     font-weight: 600;
+     opacity: 0.8;
+   }
+</style>
+
+<div class="page-shell">
+             <div class="header-card">
+             <h1>📖 اختيار الجزء</h1>
+             <p>اختر الجزء الذي تريد العمل عليه. سيتم توجيهك لاختيار الربع المناسب.</p>
+             
+                           {% if current_phrase %}
+              <div class="phrase-info">
+                "{{ current_phrase }}"
+              </div>
+              {% endif %}
+              
+              <!-- شريط تقدم المواضع -->
+              {% if positions_info %}
+              <div class="positions-tracker">
+                <div class="positions-header">
+                  <span>المواضع المطلوبة:</span>
+                  <span class="positions-count">{{ positions_info.total }} موضع</span>
+                </div>
+                <div class="positions-list">
+                  {% for position in positions_info.positions %}
+                  <div class="position-item {% if position.completed %}completed{% elif position.current %}current{% endif %}">
+                    <span class="position-number">{{ forloop.counter }}</span>
+                    <span class="position-label">الموضع {{ forloop.counter }}</span>
+                    {% if position.completed %}
+                      <span class="position-status completed">✓ مكتمل</span>
+                    {% elif position.current %}
+                      <span class="position-status current">🔄 الحالي</span>
+                    {% else %}
+                      <span class="position-status upcoming">⏳ قادم</span>
+                    {% endif %}
+                  </div>
+                  {% endfor %}
+                </div>
+              </div>
+              {% endif %}
+              
+              <!-- شريط التقدم -->
+              <div class="progress-tracker">
+                <div class="progress-step completed">
+                  <span class="step-number">1</span>
+                  <span class="step-label">اختيار النطاق</span>
+                </div>
+                <div class="progress-line"></div>
+                <div class="progress-step active">
+                  <span class="step-number">2</span>
+                  <span class="step-label">اختيار الجزء</span>
+                </div>
+                <div class="progress-line"></div>
+                <div class="progress-step">
+                  <span class="step-number">3</span>
+                  <span class="step-label">اختيار الربع</span>
+                </div>
+                <div class="progress-line"></div>
+                <div class="progress-step">
+                  <span class="step-number">4</span>
+                  <span class="step-label">عرض القرآن</span>
+                </div>
+              </div>
+                   
+           </div>
+
+  {% if no_juz_reason %}
+  <div class="no-juz-message">
+    <h3>⚠️ لا توجد أجزاء متاحة</h3>
+    <p>{{ no_juz_reason }}</p>
+    <a href="{% url 'core:main_menu' %}" class="btn btn-outline">العودة للرئيسية</a>
+  </div>
+  {% else %}
+    {% if show_disabled_warning %}
+    <div class="disabled-juz-warning">
+      <div class="warning-icon">❌</div>
+      <div class="warning-content">
+        <h3>تنبيه: فكر مرة أخرى</h3>
+        <p>الجزء المختار لا يحتوي على أي موضع</p>
+      </div>
+    </div>
+    {% endif %}
+    
+    <div class="juz-grid">
+      {% for juz_no in juz_numbers %}
+        {% if juz_no in disabled_juz %}
+                  <div class="juz-item disabled" title="هذا الجزء لا يحتوي على مواضع">
+          <div class="juz-number">الجزء {{ juz_no }}</div>
+          <div class="juz-name">{{ juz_names|get_item:juz_no|default:"الجزء" }}</div>
+          <div class="juz-status">❌ لا يحتوي على مواضع</div>
+          <div class="juz-warning">اختر جزء آخر</div>
+        </div>
+        {% else %}
+          <a href="{% url 'core:pages_choose_quarter' juz_no %}" class="juz-item">
+            <div class="juz-number">الجزء {{ juz_no }}</div>
+            <div class="juz-name">{{ juz_names|get_item:juz_no|default:"الجزء" }}</div>
+          </a>
+        {% endif %}
+      {% endfor %}
+    </div>
+  {% endif %}
+  
+  <div style="text-align: center; margin-top: 2rem;">
+    <a href="{% url 'core:main_menu' %}" class="btn btn-outline">العودة للرئيسية</a>
+  </div>
+</div>
+
+{% endblock %}

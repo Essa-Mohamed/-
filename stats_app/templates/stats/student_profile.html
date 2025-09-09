@@ -1,0 +1,359 @@
+{% extends "core/base.html" %}
+{% load static i18n %}
+
+{% block title %}بروفايل {{ profile_student.display_name }} — متواتر{% endblock %}
+
+{% block content %}
+<style>
+  .profile-shell {
+    min-height: 72vh;
+    display: grid;
+    gap: 1.5rem;
+    align-content: start;
+    overflow-x: hidden;
+    padding: 0 12px;
+  }
+  
+  .profile-header {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    padding: 1.5rem;
+    border-radius: 20px;
+    background: linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02));
+    border: 1px solid rgba(255,255,255,.12);
+    box-shadow: 0 20px 40px rgba(0,0,0,.3);
+  }
+
+  /* تطبيق الـ skin على صفحة الملف الشخصي - فقط إذا كان موجود وليس افتراضي */
+  {% if profile_student.skin and profile_student.skin != 'default' and profile_student.skin != None %}
+  .profile-header {
+    background: linear-gradient(180deg, rgba(0,0,0,.4), rgba(0,0,0,.3));
+    background-image: url('{% static "img/skins/" %}{{ profile_student.skin }}.jpg');
+    background-size: cover;
+    background-position: center;
+    background-blend-mode: overlay;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+  
+  .profile-header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,.3);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    border-radius: 20px;
+    z-index: 0;
+  }
+  
+  .profile-header > * {
+    position: relative;
+    z-index: 1;
+  }
+  {% endif %}
+  
+  .profile-avatar {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    overflow: hidden;
+    background: #0b1713;
+    border: 3px solid rgba(241,207,107,.3);
+    box-shadow: 0 10px 30px rgba(0,0,0,.4);
+  }
+  
+  .profile-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  
+  .profile-avatar .fallback {
+    width: 100%;
+    height: 100%;
+    display: grid;
+    place-items: center;
+    font-size: 3rem;
+    color: #9aa3b2;
+  }
+  
+  .profile-info {
+    flex: 1;
+  }
+  
+  .profile-name {
+    margin: 0 0 0.5rem 0;
+    color: #fff;
+    font-size: 2rem;
+    font-weight: 900;
+  }
+  
+  .profile-username {
+    margin: 0 0 1rem 0;
+    color: rgba(255,255,255,.7);
+    font-size: 1.1rem;
+    font-weight: 500;
+  }
+  
+  .profile-joined {
+    color: rgba(255,255,255,.6);
+    font-size: 0.9rem;
+  }
+  
+  .profile-actions {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+  }
+  
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+  }
+  
+  .stat-card {
+    background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
+    border: 1px solid rgba(255,255,255,.1);
+    border-radius: 16px;
+    padding: 1.5rem;
+    text-align: center;
+    transition: all 0.3s ease;
+  }
+  
+  .stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 30px rgba(0,0,0,.2);
+    border-color: rgba(241,207,107,.3);
+  }
+  
+  .stat-value {
+    font-size: 2.5rem;
+    font-weight: 900;
+    color: #f1cf6b;
+    margin-bottom: 0.5rem;
+    text-shadow: 0 0 20px rgba(241,207,107,.3);
+  }
+  
+  .stat-label {
+    color: rgba(255,255,255,.8);
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  
+  .accuracy-card {
+    background: linear-gradient(180deg, rgba(34,197,94,.1), rgba(34,197,94,.05));
+    border-color: rgba(34,197,94,.3);
+  }
+  
+  .accuracy-card .stat-value {
+    color: #22c55e;
+    text-shadow: 0 0 20px rgba(34,197,94,.3);
+  }
+  
+  .score-card {
+    background: linear-gradient(180deg, rgba(241,207,107,.1), rgba(241,207,107,.05));
+    border-color: rgba(241,207,107,.3);
+  }
+  
+  .recent-sessions {
+    background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
+    border: 1px solid rgba(255,255,255,.1);
+    border-radius: 20px;
+    padding: 1.5rem;
+  }
+  
+  .recent-sessions h3 {
+    margin: 0 0 1rem 0;
+    color: #fff;
+    font-size: 1.3rem;
+    font-weight: 800;
+  }
+  
+  .session-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem;
+    margin-bottom: 0.5rem;
+    background: rgba(255,255,255,.03);
+    border-radius: 12px;
+    border: 1px solid rgba(255,255,255,.08);
+    transition: all 0.3s ease;
+  }
+  
+  .session-item:hover {
+    background: rgba(255,255,255,.06);
+    border-color: rgba(255,255,255,.15);
+  }
+  
+  .session-info {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+  
+  .session-type {
+    background: rgba(241,207,107,.2);
+    color: #f1cf6b;
+    padding: 0.3rem 0.8rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    border: 1px solid rgba(241,207,107,.3);
+  }
+  
+  .session-date {
+    color: rgba(255,255,255,.6);
+    font-size: 0.9rem;
+  }
+  
+  .session-score {
+    font-weight: 800;
+    color: #22c55e;
+  }
+  
+  .no-sessions {
+    text-align: center;
+    color: rgba(255,255,255,.5);
+    font-style: italic;
+    padding: 2rem;
+  }
+  
+  .back-btn {
+    background: linear-gradient(135deg, rgba(255,255,255,.1), rgba(255,255,255,.05));
+    border: 1px solid rgba(255,255,255,.2);
+    color: #fff;
+    padding: 0.8rem 1.5rem;
+    border-radius: 12px;
+    text-decoration: none;
+    font-weight: 700;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  
+  .back-btn:hover {
+    background: linear-gradient(135deg, rgba(255,255,255,.15), rgba(255,255,255,.1));
+    transform: translateY(-1px);
+    box-shadow: 0 8px 25px rgba(0,0,0,.2);
+  }
+  
+  .home-btn {
+    background: linear-gradient(135deg, rgba(59,130,246,.1), rgba(59,130,246,.05));
+    border-color: rgba(59,130,246,.3);
+  }
+  
+  .home-btn:hover {
+    background: linear-gradient(135deg, rgba(59,130,246,.15), rgba(59,130,246,.1));
+    border-color: rgba(59,130,246,.4);
+  }
+</style>
+
+<div class="profile-shell">
+  <div class="profile-header">
+    <div class="profile-avatar">
+      {% if profile_student.avatar %}
+        <img src="{{ profile_student.avatar.url }}" alt="{{ profile_student.display_name }}">
+      {% else %}
+        <span class="fallback">👤</span>
+      {% endif %}
+    </div>
+    
+    <div class="profile-info">
+      <h1 class="profile-name">{{ profile_student.display_name }}</h1>
+      <p class="profile-username">@{{ profile_student.user.username }}</p>
+      <p class="profile-joined">
+        انضم في {{ profile_student.user.date_joined|date:"d/m/Y" }}
+      </p>
+    </div>
+    
+          <div class="profile-actions">
+        <a href="{% url 'stats_app:leaderboard' %}" class="back-btn">
+          ← العودة للوحة المنافسة
+        </a>
+        <a href="{% url 'core:main_menu' %}" class="back-btn home-btn">
+          🏠 العودة للرئيسية
+        </a>
+      </div>
+  </div>
+  
+  <div class="stats-grid">
+    <div class="stat-card score-card">
+      <div class="stat-value">{{ score }}</div>
+      <div class="stat-label">النقاط الإجمالية</div>
+    </div>
+    
+    <div class="stat-card accuracy-card">
+      <div class="stat-value">
+        {% if accuracy_pct %}{{ accuracy_pct|floatformat:1 }}%{% else %}—{% endif %}
+      </div>
+      <div class="stat-label">معدل الدقة</div>
+    </div>
+    
+    <div class="stat-card">
+      <div class="stat-value">{{ completed_sessions }}</div>
+      <div class="stat-label">الامتحانات المكتملة</div>
+    </div>
+    
+    <div class="stat-card">
+      <div class="stat-value">{{ total_questions }}</div>
+      <div class="stat-label">إجمالي الأسئلة</div>
+    </div>
+    
+    <div class="stat-card">
+      <div class="stat-value">{{ correct_questions }}</div>
+      <div class="stat-label">الإجابات الصحيحة</div>
+    </div>
+    
+    <div class="stat-card">
+      <div class="stat-value">{{ wrong_questions }}</div>
+      <div class="stat-label">الإجابات الخاطئة</div>
+    </div>
+  </div>
+  
+  <div class="recent-sessions">
+    <h3>آخر الامتحانات</h3>
+    
+    {% if recent_sessions %}
+      {% for session in recent_sessions %}
+        <div class="session-item">
+          <div class="session-info">
+            <span class="session-type">
+              {% if session.test_type == 'similar_count' %}
+                عدد المتشابهات
+              {% elif session.test_type == 'verse_location_quarters' %}
+                موقع الآية
+              {% else %}
+                {{ session.test_type }}
+              {% endif %}
+            </span>
+            <span class="session-date">
+              {{ session.created_at|date:"d/m/Y H:i" }}
+            </span>
+          </div>
+          <div class="session-score">
+            {% if session.score is not None %}
+              {{ session.score }}%
+            {% else %}
+              —
+            {% endif %}
+          </div>
+        </div>
+      {% endfor %}
+    {% else %}
+      <div class="no-sessions">
+        لا توجد امتحانات مكتملة بعد.
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

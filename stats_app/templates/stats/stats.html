@@ -1,0 +1,358 @@
+{% extends "core/base.html" %}
+{% load static i18n arabic_extras %}
+
+{% block title %}إحصائياتك — متواتر{% endblock %}
+
+{% block content %}
+<style>
+  .s-wrap{max-width:980px; margin:18px auto; padding:14px; color:#fff}
+  .s-head{
+    border:1px solid rgba(212,175,55,.22);
+    background: linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.015));
+    border-radius:16px; box-shadow:0 14px 36px rgba(0,0,0,.22);
+    padding:14px 16px; display:grid; gap:8px;
+  }
+  .s-title{margin:0; font-weight:900}
+  .s-grid{display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:1rem; margin-top:1rem}
+  @media (max-width:900px){ .s-grid{grid-template-columns:repeat(3,1fr)} }
+  @media (max-width:540px){ .s-grid{grid-template-columns:repeat(2,1fr)} }
+  .card{
+    background:linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
+    border:1px solid rgba(255,255,255,.1);
+    border-radius:16px; padding:1.5rem; display:grid; gap:0.5rem; text-align:center;
+    transition: all 0.3s ease;
+  }
+  .card:hover{
+    transform: translateY(-2px);
+    box-shadow: 0 10px 30px rgba(0,0,0,.2);
+    border-color: rgba(241,207,107,.3);
+  }
+  .num{ font-size:2.5rem; font-weight:900; color:#f1cf6b; text-shadow: 0 0 20px rgba(241,207,107,.3); }
+  .lbl{ color:rgba(255,255,255,.8); font-weight:600; font-size:0.9rem; text-transform: uppercase; letter-spacing: 0.5px; }
+  .ok .num{ color:#22c55e; text-shadow: 0 0 20px rgba(34,197,94,.3); } 
+  .no .num{ color:#ef4444; text-shadow: 0 0 20px rgba(239,68,68,.3); } 
+  .muted .num{ color:#e5d18f; text-shadow: 0 0 20px rgba(229,209,143,.3); }
+
+  .s-actions{display:flex; gap:.6rem; margin-top:10px; flex-wrap:wrap}
+  
+  /* ===== تنسيق الزرار الأحمر ===== */
+  .btn-danger {
+    background: linear-gradient(135deg, #ef4444, #dc2626) !important;
+    border-color: #dc2626 !important;
+    color: white !important;
+    font-weight: 700 !important;
+    transition: all 0.3s ease !important;
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3) !important;
+  }
+  
+  .btn-danger:hover {
+    background: linear-gradient(135deg, #dc2626, #b91c1c) !important;
+    transform: translateY(-2px) !important;
+    box-shadow: 0 6px 20px rgba(239, 68, 68, 0.4) !important;
+  }
+  
+  .btn-danger:active {
+    transform: translateY(0) !important;
+    box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3) !important;
+  }
+  
+  /* ===== قسم آخر الامتحانات ===== */
+  .recent-sessions {
+    background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
+    border: 1px solid rgba(255,255,255,.1);
+    border-radius: 20px;
+    padding: 1.5rem;
+    margin-top: 1.5rem;
+  }
+  
+  .recent-sessions h3 {
+    margin: 0 0 1rem 0;
+    color: #fff;
+    font-size: 1.3rem;
+    font-weight: 800;
+  }
+  
+  .session-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem;
+    margin-bottom: 0.5rem;
+    background: rgba(255,255,255,.03);
+    border-radius: 12px;
+    border: 1px solid rgba(255,255,255,.08);
+    transition: all 0.3s ease;
+  }
+  
+  .session-item:hover {
+    background: rgba(255,255,255,.06);
+    border-color: rgba(255,255,255,.15);
+  }
+  
+  .session-info {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+  
+  .session-type {
+    background: rgba(241,207,107,.2);
+    color: #f1cf6b;
+    padding: 0.3rem 0.8rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    border: 1px solid rgba(241,207,107,.3);
+  }
+  
+  .session-date {
+    color: rgba(255,255,255,.6);
+    font-size: 0.9rem;
+  }
+  
+  .session-score {
+    font-weight: 800;
+    color: #22c55e;
+  }
+  
+  .no-sessions {
+    text-align: center;
+    color: rgba(255,255,255,.5);
+    font-style: italic;
+    padding: 2rem;
+  }
+</style>
+
+<div class="s-wrap" dir="rtl">
+  <header class="s-head">
+    <h1 class="s-title">إحصائياتك</h1>
+    <div class="s-grid">
+      <div class="card muted">
+        <div class="num">{{ stats.total_sessions|arabic_digits }}</div>
+        <div class="lbl">الاختبارات المُنجزة</div>
+      </div>
+      <div class="card ok">
+        <div class="num">{{ stats.correct_answers|arabic_digits }}</div>
+        <div class="lbl">إجابات صحيحة</div>
+      </div>
+      <div class="card no">
+        <div class="num">{{ stats.wrong_answers|arabic_digits }}</div>
+        <div class="lbl">إجابات خاطئة</div>
+      </div>
+      <div class="card">
+        <div class="num">{{ stats.unanswered|arabic_digits }}</div>
+        <div class="lbl">غير مُجاب</div>
+      </div>
+      <div class="card ok">
+        <div class="num">{{ stats.accuracy|floatformat:1 }}%</div>
+        <div class="lbl">معدل الدقة</div>
+      </div>
+      <div class="card">
+        <div class="num">{{ stats.total_questions|arabic_digits }}</div>
+        <div class="lbl">إجمالي الأسئلة</div>
+      </div>
+    </div>
+
+    <div class="s-actions">
+      <a href="{% url 'tests:similar_count:selection' %}" class="btn btn-primary">بدء اختبار جديد</a>
+      <a href="{% url 'core:main_menu' %}" class="btn btn-outline">الرجوع للرئيسية</a>
+      
+      <!-- زرار إعادة تعيين الإحصائيات -->
+      <button 
+        type="button" 
+        class="btn btn-danger" 
+        onclick="confirmResetStats()"
+        style="background: linear-gradient(135deg, #ef4444, #dc2626); border-color: #dc2626; color: white; font-weight: 700;"
+      >
+        🗑️ إعادة تعيين الإحصائيات
+      </button>
+    </div>
+  </header>
+  
+  <!-- قسم آخر الامتحانات -->
+  <section class="recent-sessions">
+    <h3>آخر الامتحانات</h3>
+    
+    {% if recent_sessions %}
+      {% for session in recent_sessions %}
+        <div class="session-item">
+          <div class="session-info">
+            <span class="session-type">
+              {% if session.test_type == 'similar_count' %}
+                عدد المتشابهات
+              {% elif session.test_type == 'verse_location_quarters' %}
+                موقع الآية
+              {% else %}
+                {{ session.test_type }}
+              {% endif %}
+            </span>
+            <span class="session-date">
+              {{ session.created_at|date:"d/m/Y H:i" }}
+            </span>
+          </div>
+          <div class="session-score">
+            {% if session.score is not None %}
+              {{ session.score|floatformat:1 }}%
+            {% else %}
+              —
+            {% endif %}
+          </div>
+        </div>
+      {% endfor %}
+    {% else %}
+      <div class="no-sessions">
+        لا توجد امتحانات مكتملة بعد.
+      </div>
+    {% endif %}
+  </section>
+</div>
+
+<!-- JavaScript للتحذير قبل إعادة تعيين الإحصائيات -->
+<script>
+function confirmResetStats() {
+  // إنشاء نافذة تحذير جميلة
+  const warningDiv = document.createElement('div');
+  warningDiv.innerHTML = `
+    <div style="
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.8);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    ">
+      <div style="
+        background: linear-gradient(135deg, #1f2937, #111827);
+        border: 2px solid #ef4444;
+        border-radius: 16px;
+        padding: 2rem;
+        max-width: 500px;
+        text-align: center;
+        color: white;
+        box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+      ">
+        <div style="
+          font-size: 3rem;
+          margin-bottom: 1rem;
+        ">⚠️</div>
+        
+        <h2 style="
+          color: #ef4444;
+          margin: 0 0 1rem 0;
+          font-size: 1.5rem;
+          font-weight: 900;
+        ">تحذير خطير!</h2>
+        
+        <p style="
+          margin: 0 0 1.5rem 0;
+          font-size: 1.1rem;
+          line-height: 1.6;
+          color: #e5e7eb;
+        ">
+          هل أنت متأكد من أنك تريد إعادة تعيين جميع إحصائياتك؟<br>
+          <strong style="color: #ef4444;">هذا الإجراء لا يمكن التراجع عنه!</strong><br><br>
+          
+          سيتم حذف:
+          <br>• جميع الاختبارات المكتملة
+          <br>• جميع الإجابات الصحيحة والخاطئة
+          <br>• جميع النقاط والترتيب
+        </p>
+        
+        <div style="
+          display: flex;
+          gap: 1rem;
+          justify-content: center;
+          flex-wrap: wrap;
+        ">
+          <button 
+            onclick="resetStatsConfirmed()"
+            style="
+              background: linear-gradient(135deg, #ef4444, #dc2626);
+              border: none;
+              color: white;
+              padding: 0.75rem 1.5rem;
+              border-radius: 8px;
+              font-weight: 700;
+              font-size: 1rem;
+              cursor: pointer;
+              transition: all 0.3s ease;
+            "
+            onmouseover="this.style.transform='scale(1.05)'"
+            onmouseout="this.style.transform='scale(1)'"
+          >
+            🗑️ نعم، أعد تعيين الإحصائيات
+          </button>
+          
+          <button 
+            onclick="closeWarning()"
+            style="
+              background: linear-gradient(135deg, #6b7280, #4b5563);
+              border: none;
+              color: white;
+              padding: 0.75rem 1.5rem;
+              border-radius: 8px;
+              font-weight: 700;
+              font-size: 1rem;
+              cursor: pointer;
+              transition: all 0.3s ease;
+            "
+            onmouseover="this.style.transform='scale(1.05)'"
+            onmouseout="this.style.transform='scale(1)'"
+          >
+            ❌ إلغاء
+          </button>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  document.body.appendChild(warningDiv);
+}
+
+function resetStatsConfirmed() {
+  // إنشاء نموذج POST وإرساله
+  const form = document.createElement('form');
+  form.method = 'POST';
+  form.action = '{% url "stats_app:reset_stats" %}';
+  
+  // إضافة CSRF token
+  const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '{{ csrf_token }}';
+  const csrfInput = document.createElement('input');
+  csrfInput.type = 'hidden';
+  csrfInput.name = 'csrfmiddlewaretoken';
+  csrfInput.value = csrfToken;
+  form.appendChild(csrfInput);
+  
+  document.body.appendChild(form);
+  form.submit();
+}
+
+function closeWarning() {
+  // إزالة نافذة التحذير
+  const warningDiv = document.querySelector('div[style*="position: fixed"]');
+  if (warningDiv) {
+    warningDiv.remove();
+  }
+}
+
+// إغلاق النافذة عند الضغط على ESC
+document.addEventListener('keydown', function(event) {
+  if (event.key === 'Escape') {
+    closeWarning();
+  }
+});
+
+// إغلاق النافذة عند النقر خارجها
+document.addEventListener('click', function(event) {
+  if (event.target.style.position === 'fixed') {
+    closeWarning();
+  }
+});
+</script>
+
+{% endblock %}
