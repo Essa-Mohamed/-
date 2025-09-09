@@ -1,0 +1,166 @@
+{% extends "core/base.html" %}
+{% load i18n %}
+
+{% block title %}صفحات الربع — متواتر{% endblock %}
+
+{% block content %}
+<style>
+  .wrap{min-height:70vh; display:grid; gap:1rem; align-content:start}
+  .hero{ text-align:center; padding:.6rem 0 .2rem }
+  .hero h1{ margin:.2rem 0 .4rem; color:#fff; font-weight:900; font-size:clamp(20px,3.2vw,26px) }
+
+  .note{
+    margin:10px auto 0; padding:8px 12px; border:1px solid #1f2a44;
+    background:#0b1220; border-radius:10px; font-size:.95rem; color:#cfe3ff;
+    max-width:1000px;
+  }
+  .note b{ color:#fff }
+  .ok{color:#22c55e}
+  .err{color:#f87171}
+
+  .layout{display:grid; grid-template-columns:2fr 1fr; gap:20px; align-items:start; margin-top:12px}
+  @media (max-width: 900px){ .layout{ grid-template-columns:1fr } }
+
+  .grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:12px}
+  .card{
+    border:1px solid rgba(255,255,255,.10); border-radius:12px; padding:10px;
+    background:linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.015));
+  }
+  .card .thumb{
+    width:100%; height:220px; object-fit:contain; background:#0f172a; border-radius:8px;
+    border:1px solid rgba(255,255,255,.06); display:block;
+  }
+  .card .title{ font-weight:800; color:#fff; margin-bottom:6px }
+
+  .sidebar{
+    position:sticky; top:8px; border:1px solid rgba(255,255,255,.10);
+    padding:10px; border-radius:12px;
+    background:linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.015));
+  }
+  .sidebar h3{ margin:0 0 8px; color:#fff }
+
+  .ayah{
+    padding:8px 10px; border:1px solid rgba(255,255,255,.08);
+    border-radius:10px; margin:8px 0; background:rgba(2,6,23,.35);
+  }
+  .ayah:hover{ background:rgba(2,6,23,.55) }
+  .ayah b{ color:#fff }
+  .ayah .t{ font-size:13px; color:#cbd5e1; margin-top:4px }
+
+  .btn-s{ cursor:pointer; padding:.45rem .6rem; border-radius:10px; border:1px solid rgba(212,175,55,.65);
+          background:linear-gradient(135deg, var(--accent, #f1cf6b), var(--accent-2, #f3e4a8));
+          font-weight:900; color:#0e1a14 }
+</style>
+
+<div class="wrap">
+  <div class="hero">
+    <h1>صفحات الربع — {{ qid }}</h1>
+    {% if feedback %}
+      <div class="feedback feedback--{{ feedback.level|default:'info' }}">{{ feedback.text }}</div>
+    {% endif %}
+  </div>
+
+  <div class="note">
+    اختر صفحة من الشبكة ثم اضغط <b>عرض آيات الصفحة</b> لاختيار <b>أول آية</b> في الربع.
+    <span id="msg"></span>
+  </div>
+
+  <div class="layout">
+    <div>
+      <div class="grid" id="pages">
+        {% for p in pages %}
+        <div class="card">
+          <div class="title">صفحة {{ p.number }}</div>
+          {% comment %}
+            نستخدم عرض الـ SVG عبر الـ view الموجود عندك: page_svg
+          {% endcomment %}
+          <img class="thumb" src="{% url 'core:page_svg' p.number %}" alt="صفحة {{ p.number }}">
+          <div style="margin-top:10px">
+            <button class="btn-s" onclick="loadAyat({{ p.number }})">عرض آيات الصفحة</button>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <aside class="sidebar">
+      <h3>آيات الصفحة <span id="pno">—</span></h3>
+      <div id="ayat"></div>
+    </aside>
+  </div>
+</div>
+
+<script>
+function getCookie(name){
+  const parts = document.cookie.split(';').map(s=>s.trim());
+  for(const c of parts){
+    if(c.startsWith(name+'=')) return decodeURIComponent(c.substring(name.length+1));
+  }
+  return '';
+}
+
+function setMsg(text, ok=true){
+  const el = document.getElementById('msg');
+  el.className = ok ? 'ok' : 'err';
+  el.textContent = ' ' + text;
+}
+
+async function loadAyat(pno){
+  document.getElementById('pno').textContent = pno;
+  try{
+    // نفس مسار API الموجود عندك: /api/page/<pno>/ayat/
+    const res = await fetch(`/api/page/${pno}/ayat/`);
+    if(!res.ok){ setMsg('تعذّر تحميل آيات الصفحة.', false); return; }
+    const js  = await res.json();
+    const cont = document.getElementById('ayat');
+    cont.innerHTML = '';
+    if(!js.ayat || !js.ayat.length){
+      cont.innerHTML = '<div class="ayah">لا توجد آيات مرتبطة بهذه الصفحة.</div>';
+      return;
+    }
+    js.ayat.forEach(a=>{
+      const d = document.createElement('div');
+      d.className = 'ayah';
+      const safeVK = String(a.vk || '');
+      d.innerHTML = `<b>${safeVK}</b>
+        <div class="t">${a.text || ''}</div>
+        <div style="margin-top:6px">
+          <button class="btn-s" onclick="selectFirstAyah(${a.id}, '${safeVK.replace(/'/g, "\\'")}')">
+            اختيار هذه كأول آية في الربع
+          </button>
+        </div>`;
+      cont.appendChild(d);
+    });
+  }catch(e){
+    setMsg('خطأ في الاتصال بالخادم.', false);
+  }
+}
+
+async function selectFirstAyah(ayahId, vk){
+  try{
+    const res = await fetch("{% url 'core:api_pages_select_first' %}", {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
+        'X-CSRFToken': getCookie('csrftoken'),
+        'X-Requested-With': 'XMLHttpRequest'
+      },
+      body: new URLSearchParams({ ayah_id: String(ayahId) }).toString()
+    });
+    const js = await res.json();
+    if(!res.ok || !js.ok){
+      setMsg('تعذّر حفظ الاختيار' + (js && js.error ? ' ('+js.error+')' : ''), false);
+      return;
+    }
+    setMsg(`تم اختيار ${vk} كأول آية في الربع ✅`, true);
+
+    // بعد الحفظ، تقدر توجه المستخدم للخطوة التالية (مثال):
+    // location.href = '{% url "core:pages_choose_juz" %}';
+    alert(`تم اختيار ${vk} كأول آية في الربع ✅\nالخطوة التالية: تحديد الموضع (فوق/وسط/تحت) أو متابعة السؤال.`);
+  }catch(e){
+    setMsg('تعذّر الاتصال بالخادم.', false);
+  }
+}
+</script>
+{% endblock %}
+<style>.is-disabled{opacity:.45;filter:grayscale(1);pointer-events:none}.dim{opacity:.6}</style>

@@ -1,0 +1,100 @@
+{% extends "core/base.html" %}
+{% load static i18n %}
+
+{% block title %}لوحة المنافسة — متواتر{% endblock %}
+
+{% block content %}
+<style>
+  .board-shell{min-height:72vh; display:grid; gap:1rem; align-content:start}
+  .head{
+    display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:.6rem;
+    padding:.9rem 1rem; border-radius:16px;
+    background:linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.015));
+    border:1px solid rgba(255,255,255,.10); box-shadow:0 14px 36px rgba(0,0,0,.22);
+  }
+  .head h1{margin:0; color:#fff; font-weight:900}
+  .table-wrap{
+    overflow:auto;
+    background:linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.015));
+    border:1px solid rgba(255,255,255,.10); border-radius:16px; box-shadow:0 14px 36px rgba(0,0,0,.22);
+  }
+  table{width:100%; border-collapse:separate; border-spacing:0}
+  thead th{
+    text-align:center; color:#e7efe9; font-weight:900; padding:.75rem .6rem; position:sticky; top:0; background:#071510;
+  }
+  tbody td{padding:.65rem .6rem; border-top:1px solid rgba(255,255,255,.07); text-align:center; color:#e9f5ef}
+  tbody tr:nth-child(odd){background:rgba(255,255,255,.02)}
+  .player{
+    display:flex; gap:.55rem; align-items:center; justify-content:flex-start; color:#fff; font-weight:800;
+  }
+  .avatar{width:30px; height:30px; border-radius:50%; overflow:hidden; background:#0b1713; display:inline-grid; place-items:center; border:1px solid rgba(255,255,255,.12)}
+  .avatar img{width:100%; height:100%; object-fit:cover}
+  .rank{
+    font-weight:900; width:2.8rem; text-align:center; border-radius:999px; padding:.25rem .45rem; margin-inline:auto;
+    background:#0b1713; border:1px solid rgba(255,255,255,.12); color:#fff;
+  }
+  .r1{background:linear-gradient(135deg,#ffe08a,#e7b200); color:#1b1b1b}
+  .r2{background:linear-gradient(135deg,#e6e9ef,#9aa3b2); color:#1b1b1b}
+  .r3{background:linear-gradient(135deg,#ffd2a6,#b66a28); color:#1b1b1b}
+  .badge{margin-inline-start:.35rem}
+  .t-center{text-align:center}
+</style>
+
+<div class="board-shell">
+  <div class="head">
+    <h1>لوحة المنافسة</h1>
+    <div class="actions">
+      <a href="{% url 'core:main_menu' %}" class="btn btn-outline">الرجوع للرئيسية</a>
+    </div>
+  </div>
+
+  <div class="table-wrap">
+    <table dir="rtl">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>الطالب</th>
+          <th>النقاط</th>
+          <th>الامتحانات</th>
+          <th>صحيح</th>
+          <th>خطأ</th>
+          <th>غير مُجاب</th>
+          <th>الدقة</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in rows %}
+        <tr>
+          <td>
+            <span class="rank {% if r.rank == 1 %}r1{% elif r.rank == 2 %}r2{% elif r.rank == 3 %}r3{% endif %}">
+              {{ r.rank }}
+            </span>
+          </td>
+          <td>
+            <span class="player">
+              <span class="avatar">
+                {% if r.avatar %}<img src="{{ r.avatar }}" alt="">{% else %}<span class="fallback">👤</span>{% endif %}
+              </span>
+              {{ r.display_name }}
+              {% if r.rank <= 3 %}
+                <span class="badge">{% if r.rank == 1 %}🥇{% elif r.rank == 2 %}🥈{% else %}🥉{% endif %}</span>
+              {% endif %}
+            </span>
+          </td>
+          <td><b>{{ r.score }}</b></td>
+          <td>{{ r.exams }}</td>
+          <td>{{ r.correct }}</td>
+          <td>{{ r.wrong }}</td>
+          <td>{{ r.unanswered }}</td>
+          <td class="t-center">
+            {% if r.acc_percent is not None %}{{ r.acc_percent|floatformat:2 }}%{% else %}—{% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="8" class="t-center">لا توجد بيانات بعد.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

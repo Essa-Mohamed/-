@@ -1,0 +1,241 @@
+{% extends "core/base.html" %}
+{% load i18n %}
+
+{% block title %}اختيار الجزء — متواتر{% endblock %}
+
+{% block content %}
+<style>
+  :root{ --muted:#9aa3ad }
+  .layout{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:1rem}
+  @media (max-width: 1024px){ .layout{grid-template-columns:1fr} }
+  .wrap{display:grid; gap:1rem; align-content:start}
+  .hero{ text-align:start; padding:.4rem 0 .2rem }
+  .hero h1{ margin:.2rem 0 .2rem; color:#fff; font-weight:900; font-size:clamp(20px,3.2vw,26px) }
+  .hero p{ color:var(--muted); margin:0; max-width:820px }
+  .grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:.8rem }
+  @media (max-width: 1100px){ .grid{ grid-template-columns:repeat(3,1fr) } }
+  @media (max-width: 900px){ .grid{ grid-template-columns:repeat(2,1fr) } }
+  @media (max-width: 560px){ .grid{ grid-template-columns:1fr } }
+  .card{
+    border:1px solid rgba(255,255,255,.10);
+    border-radius:16px;
+    background:linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.015));
+    padding:1rem; display:grid; gap:.4rem
+  }
+  .muted{ color:var(--muted) }
+  .btn{ display:inline-block; padding:.5rem .8rem; border-radius:10px; font-weight:800 }
+  .btn-primary{ background:#2563eb; color:#fff }
+  .btn-outline{ background:transparent; border:1px solid rgba(255,255,255,.2); color:#fff }
+  .is-disabled{ opacity:.45; filter:grayscale(1); pointer-events:none }
+  .dim{ opacity:.6 }
+  /* Gauge card */
+  .score-card{display:grid;gap:.6rem;padding:1rem;border:1px solid rgba(255,255,255,.10);border-radius:16px;background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,.015));}
+  .gauge{width:220px;height:110px;position:relative;margin:auto}
+  .gauge-face{position:absolute;inset:0;
+    -webkit-mask: radial-gradient(100% 100% at 50% 100%, transparent 59%, #000 60%);
+            mask: radial-gradient(100% 100% at 50% 100%, transparent 59%, #000 60%);
+    border-radius:12px;filter: drop-shadow(0 0 10px rgba(255,255,255,.08))}
+  .gauge-value{position:absolute;left:0;right:0;bottom:0;text-align:center;font-weight:900;font-size:28px;color:#fff}
+  .stats{display:grid;gap:.3rem;margin-top:.4rem}
+  .stat{font-weight:800}
+  .stat.pos{color:#22c55e}.stat.neg{color:#ef4444}
+  /* Sidebar progress */
+  .side{display:grid;gap:.8rem;align-content:start}
+  .panel{border:1px solid rgba(255,255,255,.10);border-radius:16px;background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,.015));padding:1rem}
+  .progress-list{display:grid; gap:.4rem}
+  .badge{display:flex;align-items:center;gap:.5rem;padding:.45rem .6rem;border-radius:10px;border:1px solid rgba(255,255,255,.1)}
+  .badge .dot{width:.8rem;height:.8rem;border-radius:50%;background:#64748b}
+  .badge.done .dot{background:#22c55e}
+  .badge.current{border-color:#fde047;background:rgba(253,224,71,.08)}
+</style>
+
+<div class="layout"
+     data-flow-total="{{ flow_total|default:0 }}"
+     data-flow-current="{{ flow_current|default:1 }}"
+     data-flow-completed='{{ flow_completed|default:"[]" }}'>
+
+  <div class="wrap">
+    <!-- Gauge + إحصائيات + تفعيل البونص + تعيين عدد المواضع -->
+    <div class="score-card">
+      <div class="gauge" id="gauge" style="--p: {{ gauge_score|default:0 }};">
+        <div class="gauge-face" style="background: conic-gradient(#22c55e calc({{ gauge_score|default:0 }} * 1%), #fde047 0 80%, #ef4444 0)"></div>
+        <div class="gauge-value" id="gVal">{{ gauge_score|default:0 }}</div>
+      </div>
+
+      <div class="stats" id="statsList">
+        {% if request.session.pages_order %}
+          <div class="stat pos">+15% اختيار بالترتيب</div>
+        {% endif %}
+        {% for ev in gauge_events %}
+          <div class="stat {% if ev.d >= 0 %}pos{% else %}neg{% endif %}">{{ ev.d }}% {{ ev.t }}</div>
+        {% endfor %}
+      </div>
+
+      <div class="controls" style="display:flex;gap:.5rem;flex-wrap:wrap">
+        {% if not request.session.pages_order %}
+          <button type="button" id="enableOrder" class="btn btn-outline">تفعيل الاختيار بالترتيب (+15%)</button>
+        {% endif %}
+        <div class="inline" style="display:flex;align-items:center;gap:.4rem">
+          <label for="setN" class="muted">عدد المواضع:</label>
+          <select id="setN" class="btn btn-outline">
+            {% for nn in n_options %}
+              <option value="{{ nn }}"{% if flow_total == nn %} selected{% endif %}>{{ nn }}</option>
+            {% endfor %}
+          </select>
+          <button type="button" id="applyN" class="btn btn-outline">تعيين</button>
+        </div>
+      </div>
+
+      {% if gauge_score|default:100 < 50 %}
+        <div class="muted" style="margin-top:.4rem;color:#ef4444;font-weight:800">لقد رسبت — لا يمكنك المتابعة.</div>
+        <a href="{% url 'core:test_question' %}" class="btn btn-primary">اذهب لصفحة النتيجة</a>
+      {% endif %}
+    </div>
+
+    <div class="hero">
+      <h1>اختر الجزء للموضع {{ step_no|default:1 }}</h1>
+      <p class="muted">اختر الجزء الذي تعتقد أن فيه {{ step_label|default:"الموضع الحالي" }}.</p>
+    </div>
+
+    {% with items=juz_numbers %}
+      {% if items %}
+        <div class="grid" role="list">
+          {% for jno in items %}
+            <article class="card" role="listitem">
+              <h3>الجزء {{ jno }}</h3>
+              <p class="muted">سيفتح قائمة أرباع هذا الجزء.</p>
+              <a class="btn btn-primary{% if disabled_juz and jno in disabled_juz %} is-disabled dim{% endif %}"
+                 {% if disabled_juz and jno in disabled_juz %}
+                   tabindex="-1" aria-disabled="true" onclick="return false"
+                 {% else %}
+                   href="{% url 'core:pages_choose_quarter' jno %}"
+                 {% endif %}>
+                اختيار هذا الجزء
+              </a>
+            </article>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="empty">
+          <p class="muted"><strong>لا توجد أجزاء ضمن النطاق الحالي.</strong></p>
+          {% if no_juz_reason %}
+            <p class="muted">{{ no_juz_reason }}</p>
+          {% endif %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    {% if feedback %}
+      <div class="notice notice-{{ feedback.level|default:'info' }}">
+        {{ feedback.message|safe }}
+      </div>
+    {% endif %}
+  </div>
+
+  <!-- الشريط الجانبي: قائمة المواضع -->
+  <aside class="side">
+    <div class="panel">
+      <h3 style="margin:.2rem 0 .6rem">المواضع</h3>
+      <div id="progressList" class="progress-list"
+           data-total="{{ flow_total|default:0 }}"
+           data-current="{{ flow_current|default:1 }}"
+           data-completed='{{ flow_completed|default:"[]" }}'>
+        <!-- يتم توليد العناصر بالـ JS -->
+      </div>
+    </div>
+  </aside>
+</div>
+
+<script>
+(function(){
+  const elGauge = document.getElementById('gauge');
+  const val = document.getElementById('gVal');
+  const stats = document.getElementById('statsList');
+  const btnOrder = document.getElementById('enableOrder');
+  const selN = document.getElementById('setN');
+  const btnN = document.getElementById('applyN');
+  const progress = document.getElementById('progressList');
+
+  function renderProgress(){
+    if(!progress) return;
+    const total = parseInt(progress.dataset.total||'0',10)||0;
+    const current = parseInt(progress.dataset.current||'1',10)||1;
+    let completed = [];
+    try{ completed = JSON.parse(progress.dataset.completed||'[]') }catch(e){ completed=[] }
+    progress.innerHTML = '';
+    for(let i=1;i<=total;i++){
+      const done = completed.includes(i);
+      const cur = (i===current);
+      const div = document.createElement('div');
+      div.className = 'badge'+(done?' done':'')+(cur?' current':'');
+      div.innerHTML = `<span class="dot"></span><span>الموضع ${i}</span>${done?' <span>✅</span>':''}`;
+      progress.appendChild(div);
+    }
+  }
+
+  function setGauge(p){
+    if(!elGauge||!val) return;
+    elGauge.style.setProperty('--p', p);
+    elGauge.querySelector('.gauge-face').style.background =
+      `conic-gradient(#22c55e calc(${p} * 1%), #fde047 0 80%, #ef4444 0)`;
+    val.textContent = p;
+  }
+
+  async function call(url){
+    const res = await fetch(url, {headers:{'X-Requested-With':'XMLHttpRequest'}});
+    if(!res.ok) throw new Error('network');
+    return await res.json();
+  }
+
+  if(btnOrder){
+    btnOrder.addEventListener('click', async ()=>{
+      try{
+        const data = await call('?ajax=1&order=1');
+        if(data.ok){
+          setGauge(data.gauge_score||0);
+          if(data.event){
+            const div = document.createElement('div');
+            div.className = 'stat '+(data.event.d>=0?'pos':'neg');
+            div.textContent = `${data.event.d}% ${data.event.t}`;
+            stats.prepend(div);
+          }
+          btnOrder.remove();
+        }
+      }catch(e){}
+    });
+  }
+
+  if(btnN){
+    btnN.addEventListener('click', async ()=>{
+      const n = parseInt(selN.value,10)||1;
+      try{
+        const data = await call(`?ajax=1&set_n=${n}`);
+        if(data.ok){
+          // حدّث اللوحة الجانبية
+          progress.dataset.total = String(data.flow.total||n);
+          progress.dataset.current = String(data.flow.current||1);
+          progress.dataset.completed = JSON.stringify(data.flow.completed||[]);
+          renderProgress();
+          // أضف حدث بسيط في الإحصائيات
+          if(data.event){
+            const div = document.createElement('div');
+            div.className = 'stat '+(data.event.d>=0?'pos':'neg');
+            div.textContent = `${data.event.d}% ${data.event.t}`;
+            stats.prepend(div);
+          }
+        }
+      }catch(e){}
+    });
+  }
+
+  // init from dataset in container
+  const layout = document.querySelector('.layout');
+  if(layout){
+    progress.dataset.total = layout.dataset.flowTotal||progress.dataset.total;
+    progress.dataset.current = layout.dataset.flowCurrent||progress.dataset.current;
+    progress.dataset.completed = layout.dataset.flowCompleted||progress.dataset.completed;
+  }
+  renderProgress();
+})();
+</script>
+{% endblock %}

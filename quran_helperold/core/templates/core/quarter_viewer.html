@@ -1,0 +1,254 @@
+{% extends "core/base.html" %}
+{% load static i18n %}
+
+{% block title %}عارض الربع — متواتر{% endblock %}
+
+{% block content %}
+<style>
+  .viewer-shell{min-height:72vh; display:grid; gap:1rem}
+  .topbar{
+    display:flex; align-items:center; justify-content:center; gap:.8rem; text-align:center;
+    border:1px solid rgba(255,255,255,.10);
+    background: linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.015));
+    border-radius:16px; padding:.9rem 1.1rem; box-shadow:0 12px 32px rgba(0,0,0,.2);
+  }
+  .title{margin:0; color:#fff; font-weight:900}
+  .muted{color:var(--muted)}
+
+  .viewer{
+    display:grid; gap:.8rem;
+    border:1px solid rgba(255,255,255,.10);
+    background: linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.015));
+    border-radius:16px; padding:.8rem; box-shadow:0 14px 36px rgba(0,0,0,.22);
+  }
+
+  .spread{ display:grid; grid-template-columns: 1fr 1fr; gap:1rem; }
+  @media (max-width: 980px){ .spread{ grid-template-columns: 1fr } }
+
+  .page-card{
+    display:grid; gap:.5rem;
+    border:1px solid rgba(255,255,255,.08);
+    background:#0c1713; border-radius:14px; padding:.6rem;
+  }
+  .page-head{display:flex; align-items:center; justify-content:space-between; color:var(--muted); font-weight:800}
+  .thumb-wrap{
+    position:relative;
+    display:grid; place-items:center;
+    background: #0a1210; border:1px dashed rgba(255,255,255,.08);
+    border-radius:12px; padding:.4rem; min-height:360px;
+    cursor:pointer;
+  }
+  .thumb{width:100%; height:100%; max-height:560px; object-fit:contain}
+  .tap-hint{position:absolute; bottom:.5rem; inset-inline:0; text-align:center; font-size:.85rem; color:var(--muted)}
+
+  .nav{ display:flex; align-items:center; justify-content:center; gap:.6rem; }
+  .index-pill{
+    background:#0c1713; border:1px solid rgba(255,255,255,.10);
+    border-radius:999px; padding:.35rem .7rem; color:var(--text); font-weight:800
+  }
+
+  /* Modal */
+  .modal-backdrop{
+    position:fixed; inset:0; background:rgba(0,0,0,.55);
+    display:none; align-items:flex-end; justify-content:center;
+  }
+  .modal{ width:min(860px, 92vw); max-height:74vh; overflow:auto;
+    background:#0c1713; border:1px solid rgba(255,255,255,.12); border-radius:16px 16px 0 0;
+    padding: .8rem 1rem; box-shadow:0 24px 80px rgba(0,0,0,.5);
+  }
+  .modal-head{ display:flex; align-items:center; justify-content:space-between; gap:.6rem; }
+  .modal-title{ margin:0; color:#fff; font-weight:900 }
+  .close{ background:transparent; border:1px solid rgba(255,255,255,.15); border-radius:10px; color:var(--text); padding:.3rem .6rem; cursor:pointer }
+  .ayah-list{ display:grid; gap:.45rem; margin-top:.5rem }
+  .ayah-item{ border:1px solid rgba(255,255,255,.1); border-radius:10px; padding:.55rem .65rem; background:#0a1210 }
+  .ayah-item .vk{ font-weight:900; color:#fff }
+  .ayah-item .txt{ font-size:.92rem; color:var(--muted); margin-top:.25rem }
+  .ayah-actions{ margin-top:.4rem; display:flex; gap:.4rem; flex-wrap:wrap }
+</style>
+
+<div class="viewer-shell" data-qid="{{ qid }}">
+  <section class="topbar">
+    <div>
+      <h1 class="title">عارض الربع (صفحتين–صفحتين)</h1>
+      <div class="muted">اضغط على صورة الصفحة لاختيار «أول آية في الربع».</div>
+    </div>
+  </section>
+
+  <section class="viewer" id="viewer">
+    <div class="spread">
+      <!-- اليسار -->
+      <article class="page-card" id="left">
+        <div class="page-head">
+          <div>صفحة <b id="leftNo">—</b></div>
+        </div>
+        <div class="thumb-wrap" id="leftWrap">
+          <img id="leftImg" class="thumb" alt="صفحة يسار" />
+          <div class="tap-hint">اضغط لاختيار آية من هذه الصفحة</div>
+        </div>
+      </article>
+
+      <!-- اليمين -->
+      <article class="page-card" id="right">
+        <div class="page-head">
+          <div>صفحة <b id="rightNo">—</b></div>
+        </div>
+        <div class="thumb-wrap" id="rightWrap">
+          <img id="rightImg" class="thumb" alt="صفحة يمين" />
+          <div class="tap-hint">اضغط لاختيار آية من هذه الصفحة</div>
+        </div>
+      </article>
+    </div>
+
+    <div class="nav">
+      <button class="btn btn-outline" id="prevBtn">⬅ السابق</button>
+      <span class="index-pill">السبريد <span id="spreadIndex">1</span> من <span id="spreadTotal">—</span></span>
+      <button class="btn btn-outline" id="nextBtn">التالي ➡</button>
+    </div>
+  </section>
+
+  <div class="nav" style="margin-bottom:.4rem">
+    <a href="javascript:history.back()" class="btn btn-outline">رجوع</a>
+  </div>
+</div>
+
+<!-- Modal لاختيار آيات الصفحة -->
+<div class="modal-backdrop" id="modal">
+  <div class="modal">
+    <div class="modal-head">
+      <h3 class="modal-title">اختر أول آية من الصفحة <span id="modalPno">—</span></h3>
+      <button class="close" id="closeModal">إغلاق</button>
+    </div>
+    <div class="ayah-list" id="modalAyat"></div>
+  </div>
+</div>
+
+<script id="spreads-json" type="application/json">
+  {{ spreads|safe }}
+</script>
+
+<script>
+(function(){
+  // جلب السبريدات
+  let spreads = [];
+  try {
+    const raw = document.getElementById('spreads-json').textContent.trim();
+    const safe = raw.replaceAll("(", "[").replaceAll(")", "]").replaceAll("None", "null").replaceAll("'", '"');
+    spreads = JSON.parse(safe);
+  } catch(e) { spreads = []; }
+
+  const leftNo = document.getElementById('leftNo');
+  const rightNo = document.getElementById('rightNo');
+  const leftImg = document.getElementById('leftImg');
+  const rightImg = document.getElementById('rightImg');
+  const leftWrap = document.getElementById('leftWrap');
+  const rightWrap = document.getElementById('rightWrap');
+  const idxEl = document.getElementById('spreadIndex');
+  const totEl = document.getElementById('spreadTotal');
+  const prevBtn = document.getElementById('prevBtn');
+  const nextBtn = document.getElementById('nextBtn');
+
+  const modal = document.getElementById('modal');
+  const closeModal = document.getElementById('closeModal');
+  const modalAyat = document.getElementById('modalAyat');
+  const modalPno = document.getElementById('modalPno');
+
+  let index = 0;
+  const total = spreads.length;
+  if(totEl) totEl.textContent = total;
+
+  function pageUrl(p){ return p ? `{% url 'core:page_svg_proxy' 99999 %}`.replace('99999', p) : ''; }
+
+  async function openAyahPicker(pno){
+    modalPno.textContent = pno || '—';
+    modalAyat.innerHTML = '<div class="muted">... جاري التحميل</div>';
+    modal.style.display = 'flex';
+    try{
+      const res = await fetch(`/api/page/${pno}/ayat/`);
+      const js = await res.json();
+      modalAyat.innerHTML = '';
+      (js.ayat || []).forEach(a=>{
+        const el = document.createElement('div');
+        el.className = 'ayah-item';
+        el.innerHTML = `
+          <div class="vk">${a.vk}</div>
+          <div class="txt">${a.text}</div>
+          <div class="ayah-actions">
+            <button class="btn btn-primary" data-ayah="${a.id}">اختيار هذه كأول آية</button>
+          </div>
+        `;
+        modalAyat.appendChild(el);
+      });
+
+      modalAyat.querySelectorAll('button[data-ayah]').forEach(btn=>{
+        btn.addEventListener('click', async ()=>{
+          btn.disabled = true;
+          try{
+            const form = new FormData();
+            form.append('ayah_id', btn.getAttribute('data-ayah'));
+            const r = await fetch("{% url 'core:api_pages_select_first' %}", {
+              method: 'POST',
+              headers: {'X-Requested-With':'XMLHttpRequest', 'X-CSRFToken': '{{ csrf_token }}'},
+              body: form
+            });
+            const jr = await r.json();
+            if(jr.ok){
+              alert('تم اختيار أول آية لهذا الربع. نكمل الخطوة التالية.');
+              // TODO: الانتقال لخطوة موضع الآية (فوق/وسط/تحت)
+              modal.style.display = 'none';
+            }else{
+              alert('تعذر الحفظ. حاول مرة أخرى.');
+            }
+          }catch(e){
+            alert('تعذر الحفظ. تحقق من الاتصال.');
+          }finally{
+            btn.disabled = false;
+          }
+        });
+      });
+    }catch(e){
+      modalAyat.innerHTML = '<div class="muted">تعذر تحميل آيات الصفحة.</div>';
+    }
+  }
+
+  function attachPickers(pair){
+    const [L, R] = pair || [null, null];
+    leftWrap.onclick  = () => { if(L) openAyahPicker(L); };
+    rightWrap.onclick = () => { if(R) openAyahPicker(R); };
+  }
+
+  async function render(){
+    const pair = spreads[index] || [null, null];
+    const [L, R] = pair;
+
+    if(idxEl) idxEl.textContent = (index+1);
+
+    leftNo.textContent  = L ?? '—';
+    rightNo.textContent = R ?? '—';
+
+    leftImg.src  = L ? pageUrl(L) : '';
+    rightImg.src = R ? pageUrl(R) : '';
+
+    prevBtn.disabled = index <= 0;
+    nextBtn.disabled = index >= (total-1);
+
+    attachPickers(pair);
+  }
+
+  prevBtn.addEventListener('click', ()=>{ if(index>0){ index--; render(); }});
+  nextBtn.addEventListener('click', ()=>{ if(index<total-1){ index++; render(); }});
+  window.addEventListener('keydown', (e)=>{
+    if(e.key === 'ArrowLeft'){ nextBtn.click(); }
+    if(e.key === 'ArrowRight'){ prevBtn.click(); }
+  });
+
+  closeModal.addEventListener('click', ()=>{ modal.style.display = 'none'; });
+  modal.addEventListener('click', (e)=>{ if(e.target === modal){ modal.style.display = 'none'; } });
+
+  if(total === 0){
+    document.getElementById('viewer').innerHTML = '<div class="muted" style="padding:.8rem; text-align:center">لا توجد صفحات لهذا الربع.</div>';
+    return;
+  }
+  render();
+})();
+</script>
+{% endblock %}

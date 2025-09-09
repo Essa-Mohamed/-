@@ -1,0 +1,12 @@
+{% extends 'core/base.html' %}
+{% block title %}إدخال الاسم{% endblock %}
+{% block content %}
+  <h1>مرحباً بك في تطبيق متشابهات القرآن</h1>
+  <p>فضلاً أدخل اسمك للمتابعة:</p>
+  <form method="post">
+    {% csrf_token %}
+    <input type="text" name="display_name" placeholder="اسمك"
+           required style="padding:0.5rem; margin-bottom:0.5rem; width:100%;">
+    <button type="submit">دخول</button>
+  </form>
+{% endblock %}

@@ -1,0 +1,358 @@
+{% extends "core/base.html" %}
+{% load static arabic_extras highlight %}
+
+{% block title %}الاختبار — سؤال {{ question_number|arabic_digits }}{% endblock %}
+
+{% block content %}
+<div class="q-wrapper" dir="rtl">
+  <!-- Toast -->
+  <div id="toast" class="toast" aria-live="polite" aria-atomic="true"></div>
+
+  <header class="q-header">
+    <div class="q-scope">{{ scope_label }}</div>
+
+    <div class="q-top">
+      <div class="q-counter">
+        سؤال <strong>{{ question_number|arabic_digits }}</strong>
+        من <strong>{{ total_questions|arabic_digits }}</strong>
+      </div>
+      <div class="q-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="{{ progress_percent }}">
+        <div class="q-progress-bar" style="width: {{ progress_percent }}%;"></div>
+      </div>
+
+      <!-- زر إنهاء الاختبار نُقل للهيدر -->
+      <div class="q-head-actions">
+        <button type="button" class="btn btn-ghost" id="endBtn" aria-label="إنهاء الاختبار الآن">إنهاء الاختبار</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="q-main">
+    <article class="q-card">
+      <h1 class="q-phrase" aria-live="polite">{{ phrase }}</h1>
+    </article>
+
+    <form id="answerForm" method="post" class="q-form">
+      {% csrf_token %}
+      <fieldset class="q-options">
+        {% for opt in options %}
+        <label class="q-option">
+          <input type="radio" name="occurrence" value="{{ opt }}" required>
+          <span class="q-pill">{{ opt|arabic_digits }}</span>
+        </label>
+        {% endfor %}
+      </fieldset>
+
+      <div id="feedback" class="q-feedback" hidden></div>
+
+      <div class="q-actions">
+        <button type="submit" class="btn btn-primary" id="nextBtn">تحقّق</button>
+        <!-- تم حذف زر الإنهاء من هنا (موجود بالأعلى) -->
+      </div>
+    </form>
+
+    <details class="q-report">
+      <summary>الإبلاغ عن مشكلة في هذا السؤال</summary>
+      <form id="reportForm" method="post" action="{% url 'core:report_question' %}" class="q-report-form">
+        {% csrf_token %}
+        <input type="hidden" name="phrase" value="{{ phrase }}">
+        <input type="hidden" name="question_number" value="{{ question_number }}">
+        <input type="hidden" name="given" id="givenField" value="">
+        <input type="hidden" name="correct" value="{{ correct_count }}">
+        <input type="hidden" name="from" value="test">
+        <label for="repText" class="q-label">وصف المشكلة</label>
+        <textarea id="repText" name="text" rows="3" placeholder="اكتب وصفًا مختصرًا للمشكلة…"></textarea>
+        <button type="submit" class="btn btn-danger">إرسال الإبلاغ</button>
+      </form>
+    </details>
+
+    <!-- إنهاء مبكر (نموذج خفي) -->
+    <form id="endForm" method="post" style="display:none;">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="end">
+    </form>
+  </main>
+</div>
+
+<!-- مودال إنهاء داخلي بنفس الستايل -->
+<div class="q-modal" id="endModal" aria-hidden="true" role="dialog" aria-labelledby="endTitle">
+  <div class="q-modal-card">
+    <h3 id="endTitle" class="q-modal-title">إنهاء الاختبار؟</h3>
+    <p class="q-modal-text">هل تريد إنهاء الاختبار الآن؟ سيتم عرض نتيجتك حتى هذه اللحظة.</p>
+    <div class="q-modal-actions">
+      <button type="button" class="btn btn-primary" id="confirmEnd">تأكيد الإنهاء</button>
+      <button type="button" class="btn btn-ghost" id="cancelEnd">إلغاء</button>
+    </div>
+  </div>
+</div>
+
+<style>
+  :root{
+    /* خلفية وثيم متوافق مع باقي الصفحات */
+    --q-bg:#0f0f15;
+    --q-card:#11131d;
+    --q-text:#f3f4f6;
+    --q-sub:#9aa3b2;
+
+    --q-gold:#d4af37;
+    --q-gold-2:#b88900;
+    --q-ring: rgba(212,175,55,.35);
+
+    --q-danger:#ef4444;
+    --q-ghost:#2a3040;
+    --q-radius: 16px;
+    --q-shadow: 0 10px 30px rgba(0,0,0,.35);
+  }
+  .q-wrapper{max-width: 900px; margin: 24px auto; padding: 16px; color: var(--q-text);}
+  .q-header{margin-bottom: 16px;}
+  .q-scope{color: var(--q-sub); font-size: 14px; margin-bottom: 8px}
+  .q-top{display: grid; gap: 10px}
+  .q-counter{font-size: 15px}
+  .q-progress{
+    width: 100%; height: 10px; background: #1d2230; border-radius: 999px; overflow: hidden;
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,.05);
+  }
+  .q-progress-bar{
+    height: 100%; background: linear-gradient(90deg,var(--q-gold),var(--q-gold-2));
+    transition: width .35s ease;
+  }
+  .q-head-actions{display:flex; justify-content:flex-end}
+
+  .q-main{display: grid; gap: 16px}
+  .q-card{
+    background: linear-gradient(180deg,#0f1118, #11131d);
+    border: 1px solid rgba(212,175,55,.20);
+    border-radius: var(--q-radius);
+    box-shadow: var(--q-shadow);
+    padding: 18px 20px;
+  }
+  .q-phrase{margin: 0; line-height: 2.1; font-size: clamp(18px, 2.3vw, 22px); text-align: center;}
+
+  .q-form{display: grid; gap: 16px}
+  .q-options{
+    display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 10px; border: 0; padding: 0; margin: 0;
+  }
+  @media (max-width: 720px){ .q-options{grid-template-columns: repeat(2, minmax(0,1fr));} }
+  .q-option{position: relative; display: block; cursor: pointer}
+  .q-option input{position: absolute; inset: 0; opacity: 0; pointer-events: none;}
+  .q-pill{
+    display: grid; place-items: center;
+    height: 56px; border-radius: 14px;
+    background: #0f1118;
+    border: 1px solid rgba(212,175,55,.25);
+    font-size: 18px; font-weight: 800; letter-spacing: .2px;
+    transition: transform .12s ease, box-shadow .12s ease, border-color .12s ease, background .12s ease;
+  }
+  .q-option:hover .q-pill{transform: translateY(-1px); box-shadow: 0 8px 18px rgba(0,0,0,.25);}
+  .q-option input:focus-visible + .q-pill{outline: 2px solid var(--q-ring); outline-offset: 2px;}
+  .q-option input:checked + .q-pill{
+    background: linear-gradient(180deg, rgba(212,175,55,.12), rgba(212,175,55,.08));
+    border-color: var(--q-gold);
+    box-shadow: 0 0 0 3px var(--q-ring), 0 10px 22px rgba(212,175,55,.15);
+  }
+
+  .q-option.correct .q-pill{
+    background: linear-gradient(180deg, rgba(34,197,94,.14), rgba(34,197,94,.08));
+    border-color: #22c55e;
+  }
+  .q-option.wrong .q-pill{
+    background: linear-gradient(180deg, rgba(239,68,68,.14), rgba(239,68,68,.08));
+    border-color: #ef4444;
+  }
+
+  .q-feedback{
+    text-align:center; padding: 10px 12px; border-radius: 12px;
+    border: 1px solid rgba(255,255,255,.10);
+    background: #0f1118; color: var(--q-text); font-weight: 700;
+  }
+  .q-feedback.ok{border-color:#22c55e;}
+  .q-feedback.err{border-color:#ef4444;}
+
+  .q-actions{display: flex; gap: 10px; justify-content: center}
+  .btn{
+    appearance: none; border: 0; border-radius: 12px; padding: 12px 18px; font-weight: 800;
+    cursor: pointer; transition: filter .12s ease, transform .08s ease; white-space: nowrap;
+  }
+  .btn:active{transform: translateY(1px)}
+  .btn-primary{
+    background: linear-gradient(180deg,var(--q-gold),var(--q-gold-2)); color: #1a1200;
+    border: 1px solid rgba(212,175,55,.55);
+  }
+  .btn-primary:hover{filter: brightness(1.03)}
+  .btn-ghost{background: #0f1118; color: var(--q-text); border: 1px solid var(--q-ghost)}
+  .btn-danger{background: #ef4444; color: #310b0b;}
+
+  .q-report{
+    background: #0f1118;
+    border: 1px dashed rgba(212,175,55,.35);
+    border-radius: var(--q-radius);
+    padding: 12px 14px;
+  }
+  .q-report > summary{cursor: pointer; font-weight: 800; color: var(--q-sub)}
+  .q-report-form{display: grid; gap: 10px; margin-top: 10px}
+  .q-label{font-size: 13px; color: var(--q-sub)}
+  .q-report-form textarea{
+    width: 100%; border-radius: 10px; padding: 10px; background: #0f0f15; color: var(--q-text);
+    border: 1px solid rgba(255,255,255,.08);
+  }
+
+  /* Toast */
+  .toast{
+    position: fixed; inset-inline: 16px; bottom: 16px; z-index: 50;
+    display: none; padding: 10px 12px; border-radius: 12px; font-weight: 700;
+    background: #0f1118; color: var(--q-text); border: 1px solid rgba(212,175,55,.4);
+    box-shadow: 0 10px 30px rgba(0,0,0,.35);
+  }
+  .toast.show{display: inline-block; animation: fadein .2s ease, fadeout .2s ease 2.8s forwards;}
+  @keyframes fadein{from{opacity:0; transform: translateY(6px)} to{opacity:1; transform: translateY(0)}}
+  @keyframes fadeout{to{opacity:0; transform: translateY(6px)}}
+
+/* مودال إنهاء — غير شفّاف وواضح */
+.q-modal{
+  position: fixed; inset: 0; display: none; place-items: center; z-index: 60;
+  /* خلفية معتمة بالكامل لطمس الصفحة */
+  background: #000; /* بديل: rgba(0,0,0,.9) لو حابب نسبة بسيطة */
+}
+.q-modal.show{display: grid}
+
+/* كارت المودال نفسه بخلفية صلبة وتباين أعلى */
+.q-modal-card{
+  width:min(520px, 92vw);
+  border:1px solid rgba(212,175,55,.35);
+  background: #0f1118; /* خلفية صلبة بدل تدرّج شفاف */
+  border-radius:16px;
+  padding:1rem 1.1rem;
+  box-shadow: 0 24px 60px rgba(0,0,0,.6); /* ظل أقوى */
+  display:grid; gap:.6rem;
+}
+
+  .q-modal-title{margin:0; color:#fff; font-weight:900; font-size:1.1rem}
+  .q-modal-actions{display:flex; gap:.6rem; justify-content:flex-start; flex-wrap:wrap}
+  .q-modal-text{color:var(--q-sub); margin:.2rem 0 .4rem}
+</style>
+
+<script>
+  (function(){
+    const form = document.getElementById('answerForm');
+    const nextBtn = document.getElementById('nextBtn');
+    const endBtn  = document.getElementById('endBtn');
+    const endForm = document.getElementById('endForm');
+    const givenField = document.getElementById('givenField');
+    const reportForm = document.getElementById('reportForm');
+    const toast = document.getElementById('toast');
+    const feedbackBox = document.getElementById('feedback');
+
+    const endModal = document.getElementById('endModal');
+    const confirmEnd = document.getElementById('confirmEnd');
+    const cancelEnd = document.getElementById('cancelEnd');
+
+    const correct = parseInt('{{ correct_count|default:0 }}', 10) || 0;
+
+    // خزّن اختيار الطالب للإبلاغ
+    form.addEventListener('change', function(e){
+      if (e.target && e.target.name === 'occurrence'){
+        givenField.value = e.target.value || '';
+      }
+    });
+
+    // تأكيد الإجابة (خطوتين): تحقّق ثم التالي
+    let confirmed = false;
+
+    form.addEventListener('submit', function(e){
+      const chosen = form.querySelector('input[name="occurrence"]:checked');
+      if (!confirmed){
+        e.preventDefault();
+        if (!chosen){
+          showToast('من فضلك اختر إجابة أولًا.');
+          return;
+        }
+        const val = parseInt(chosen.value, 10);
+
+        // نظّف تلوين سابق
+        form.querySelectorAll('.q-option').forEach(el => el.classList.remove('correct','wrong'));
+
+        // تلوين الصحيح والخاطئ
+        form.querySelectorAll('.q-option').forEach(el=>{
+          const input = el.querySelector('input');
+          const v = parseInt(input.value,10);
+          if (v === correct) el.classList.add('correct');
+          if (input.checked && v !== correct) el.classList.add('wrong');
+        });
+
+        // قفل الخيارات: تعطيل كل الراديوهات ما عدا المختار
+        form.querySelectorAll('input[name="occurrence"]').forEach(inp=>{
+          if (inp !== chosen) inp.disabled = true;
+        });
+
+        // فيدباك
+        feedbackBox.hidden = false;
+        if (val === correct){
+          feedbackBox.className = 'q-feedback ok';
+          feedbackBox.textContent = 'إجابة صحيحة ✅';
+        }else{
+          feedbackBox.className = 'q-feedback err';
+          feedbackBox.textContent = 'إجابة غير صحيحة ❌';
+        }
+
+        nextBtn.textContent = 'التالي';
+        confirmed = true; // المرة الجاية هنسيب الفورم يتبعت
+        return;
+      }
+      // الإرسال الحقيقي: امنع الضغط المزدوج
+      nextBtn.disabled = true;
+    });
+
+    // فتح/غلق مودال الإنهاء
+    endBtn.addEventListener('click', ()=>{
+      endModal.classList.add('show');
+      endModal.setAttribute('aria-hidden', 'false');
+    });
+    cancelEnd.addEventListener('click', ()=>{
+      endModal.classList.remove('show');
+      endModal.setAttribute('aria-hidden', 'true');
+    });
+    confirmEnd.addEventListener('click', ()=>{
+      endForm.submit();
+    });
+
+    // إرسال الإبلاغ والبقاء في الصفحة
+    reportForm.addEventListener('submit', async function(e){
+      e.preventDefault();
+      const fd = new FormData(reportForm);
+      try{
+        const res = await fetch(reportForm.action, {
+          method: 'POST',
+          headers: {'X-Requested-With':'XMLHttpRequest'},
+          body: fd
+        });
+        let ok = false, msg = 'تم إرسال الإبلاغ. شكراً لك.';
+        const ct = res.headers.get('content-type') || '';
+        if (ct.includes('application/json')){
+          const data = await res.json();
+          ok = !!data.ok; msg = data.message || msg;
+        }else{
+          ok = res.ok;
+        }
+        if (ok){
+          showToast(msg);
+          reportForm.reset();
+          const details = reportForm.closest('details');
+          if (details) details.open = false;
+        }else{
+          showToast('تعذّر إرسال الإبلاغ. حاول مرة أخرى.');
+        }
+      }catch(_){
+        showToast('تعذّر الاتصال. تأكد من الشبكة وحاول مجددًا.');
+      }
+    });
+
+    function showToast(text){
+      if (!toast) return;
+      toast.textContent = text;
+      toast.classList.remove('show');
+      void toast.offsetWidth;
+      toast.classList.add('show');
+    }
+  })();
+</script>
+{% endblock %}

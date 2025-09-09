@@ -1,0 +1,334 @@
+{% load i18n static %}
+<!doctype html>
+<html lang="{{ LANGUAGE_CODE|default:'ar' }}" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>{% block title %}متواتر{% endblock %}</title>
+  <link rel="stylesheet" href="{% static 'css/mutawatir.css' %}">
+
+  <style>
+    .btn { display:inline-flex; align-items:center; contain:layout paint; }
+
+    .badge-alpha{
+      display:inline-block; margin-inline-start:.5rem; padding:.15rem .5rem;
+      font-size:.75rem; border-radius:.5rem; border:1px solid #d9b44a;
+      background:#fffbea; color:#8a6d1d; vertical-align:middle; white-space:nowrap;
+    }
+
+    .topbar .container.row{ display:flex; align-items:center; justify-content:space-between; }
+    .brand, .actions{ display:flex; align-items:center; }
+    .actions{ gap:.6rem; margin-inline-start:auto; }
+    .brand-link{ display:flex; align-items:center; gap:.6rem; text-decoration:none }
+    .brand-logo{ width:42px; height:42px; }
+    .brand-text .brand-name-ar{ font-size:1.18rem; font-weight:900; color:#fff }
+    .brand-text .brand-name-en{ font-size:.9rem; opacity:.9; color:#f1cf6b }
+
+    .nav-welcome{
+      display:inline-flex; align-items:center; gap:.45rem; direction: rtl;
+      font-weight:800; color:#1b1b1b;
+      background:linear-gradient(135deg, var(--accent, #f1cf6b), var(--accent-2, #f3e4a8));
+      padding:.32rem .6rem; border-radius:999px; border:1px solid rgba(212,175,55,.55);
+      box-shadow:0 6px 18px rgba(0,0,0,.12); font-size:.92rem;
+    }
+    .nav-welcome .dot{
+      width:10px; height:10px; border-radius:50%; background:#16a34a;
+      box-shadow:0 0 0 6px rgba(22,163,74,.15); animation:pulse 1.8s ease-in-out infinite;
+    }
+    @keyframes pulse{
+      0%,100%{ box-shadow:0 0 0 6px rgba(22,163,74,.15) }
+      50%{ box-shadow:0 0 0 9px rgba(22,163,74,.30) }
+    }
+
+    .user-cluster{ position:relative; display:flex; align-items:center; gap:.6rem }
+    .user-trigger{ display:flex; align-items:center; gap:.5rem; background:transparent; border:0; cursor:pointer;
+      padding:.25rem .4rem; border-radius:12px; }
+    .user-trigger:focus-visible{ outline:none; box-shadow:0 0 0 3px rgba(241,207,107,.35) }
+    .avatar{ width:40px; height:40px; border-radius:50%; overflow:hidden; background:#0f1118; border:1px solid rgba(255,255,255,.10);
+      display:inline-grid; place-items:center; }
+    .avatar img{ width:100%; height:100%; object-fit:cover; display:block }
+    .avatar-fallback{ width:100%; height:100%; display:grid; place-items:center }
+    .avatar-fallback svg{ width:72%; height:72%; }
+
+    .btn{ position:relative; overflow:hidden; transition: transform .12s ease, box-shadow .22s ease, background-color .22s ease, border-color .22s ease; will-change: transform; }
+    .btn:hover{ transform: translateY(-1px); box-shadow:0 10px 24px rgba(0,0,0,.18) }
+    .btn:active{ transform: translateY(0); box-shadow:0 6px 16px rgba(0,0,0,.16) }
+    .btn:focus-visible{ outline:none; box-shadow:0 0 0 3px rgba(241,207,107,.45), 0 10px 24px rgba(0,0,0,.18); }
+    .btn.btn-primary{ background: linear-gradient(135deg, var(--accent, #f1cf6b), var(--accent-2, #f3e4a8)); color:#0e1a14; border-color: rgba(212,175,55,.65); font-weight:900; }
+    .btn.btn-outline{ background: transparent; color: var(--accent, #f1cf6b); border:1px solid var(--accent, #f1cf6b); font-weight:800; }
+
+    /* === Score HUD (ثابت أعلى الصفحة) === */
+    .score-hud{
+      position: fixed; top: 8px; inset-inline: 0; display: grid; justify-content: center; z-index: 9998;
+      pointer-events: none;
+    }
+    .score-hud__chip{
+      pointer-events: auto; display:inline-flex; align-items:center; gap:.6rem;
+      background: rgba(2,6,23,.78); color:#fff; border:1px solid rgba(255,255,255,.14);
+      padding:.35rem .65rem; border-radius:999px; backdrop-filter: blur(6px);
+      box-shadow:0 10px 24px rgba(0,0,0,.25);
+    }
+    .score-hud__label{ opacity:.85; font-weight:700 }
+    .score-hud__value{ font-weight:900; font-variant-numeric: tabular-nums; }
+    .score-hud__delta{
+      font-weight:900; font-variant-numeric: tabular-nums;
+      padding:.05rem .5rem; border-radius:999px; border:1px solid transparent;
+      transform: translateY(-4px); opacity:0; transition: all .28s ease;
+      white-space:nowrap;
+    }
+    .score-hud__delta.show{ transform: translateY(0); opacity:1 }
+    .score-hud__delta.pos{ background:#052e16; border-color:#166534; color:#22c55e }
+    .score-hud__delta.neg{ background:#3f0610; border-color:#7f1d1d; color:#f87171 }
+
+    /* Feedback شريط داخلي */
+    .feedback{
+      margin:.5rem auto 0; padding:.6rem .8rem; border-radius:12px; border:1px solid transparent;
+      font-weight:800; text-align:center; max-width:900px;
+    }
+    .feedback--success{ background:#052e16; border-color:#166534; color:#22c55e }
+    .feedback--warning{ background:#3b2905; border-color:#a16207; color:#fbbf24 }
+    .feedback--error  { background:#3f0610; border-color:#7f1d1d; color:#f87171 }
+    .feedback--info   { background:#0b1220; border-color:#1f2a44; color:#93c5fd }
+
+    /* Splash */
+    .splash-overlay.hide { opacity: 0; pointer-events: none; }
+  </style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="container row">
+    <div class="brand">
+      <a href="{% if request.user.is_authenticated %}{% url 'core:main_menu' %}{% else %}{% url 'core:landing' %}{% endif %}"
+         class="brand-link" aria-label="Mutawatir Home">
+        <img
+          src="{% static 'img/logo.png' %}"
+          srcset="{% static 'img/logo.png' %} 1x, {% static 'img/logo@2x.png' %} 2x"
+          class="brand-logo"
+          alt="Mutawatir Logo">
+        <span class="brand-text">
+          <span class="brand-name-ar">متواتر</span>
+          <span class="brand-name-en">Mutawatir</span>
+        </span>
+        {% if IS_ALPHA %}
+          <span class="badge-alpha" title="نسخة أولية قيد التطوير">{{ APP_VERSION }}</span>
+        {% endif %}
+      </a>
+    </div>
+
+    <nav class="actions">
+      {% if request.user.is_authenticated %}
+        <div class="user-cluster">
+          <button type="button" class="user-trigger" id="userMenuBtn" aria-expanded="false">
+            <span class="avatar" aria-hidden="true">
+              {% if student and student.avatar %}
+                <img src="{{ student.avatar.url }}" alt="">
+              {% else %}
+                <span class="avatar-fallback" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" role="img" aria-label="user">
+                    <path d="M12 12c2.761 0 5-2.686 5-6s-2.239-6-5-6-5 2.686-5 6 2.239 6 5 6zm0 2c-4.418 0-8 2.239-8 5v1h16v-1c0-2.761-3.582-5-8-5z" fill="#9aa3b2"/>
+                  </svg>
+                </span>
+              {% endif %}
+            </span>
+            <span class="nav-welcome" dir="rtl">
+              <span class="dot" aria-hidden="true"></span>
+              مرحبًا، {{ student.display_name|default:request.user.username }}
+            </span>
+            <span class="caret" aria-hidden="true">▾</span>
+          </button>
+          {% url 'core:account_settings' as account_url %}
+          <div class="user-menu" id="userMenu" hidden>
+            <a href="{% url 'core:main_menu' %}" class="menu-item">الصفحة الرئيسية</a>
+            <a href="{% url 'core:complaint' %}" class="menu-item">الإبلاغ / اقتراح</a>
+            {% if account_url %}<a href="{{ account_url }}" class="menu-item">إعدادات الحساب</a>{% endif %}
+            <a href="{% url 'core:stats' %}" class="menu-item">إحصائياتك</a>
+            <a href="{% url 'core:logout' %}" class="menu-item">تسجيل الخروج</a>
+          </div>
+        </div>
+      {% else %}
+        <a class="btn btn-outline" href="{% url 'core:login' %}">{% trans "تسجيل الدخول" %}</a>
+        <a class="btn btn-primary" href="{% url 'core:signup' %}">{% trans "إنشاء حساب" %}</a>
+      {% endif %}
+
+      <form method="post" action="{% url 'set_language' %}" class="lang-form">
+        {% csrf_token %}
+        <select name="language" onchange="this.form.submit()" class="input small">
+          <option value="ar" {% if LANGUAGE_CODE == 'ar' %}selected{% endif %}>العربية</option>
+          <option value="en" {% if LANGUAGE_CODE == 'en' %}selected{% endif %}>English</option>
+        </select>
+        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+      </form>
+    </nav>
+  </div>
+</header>
+
+<!-- Score HUD -->
+{% if show_score_hud %}
+<div id="score-hud" class="score-hud"
+     data-score="{{ score|default:0 }}"
+     {% if score_delta is not None %} data-delta="{{ score_delta }}"{% endif %}>
+  <div class="score-hud__chip">
+    <span class="score-hud__label">نتيجتك</span>
+    <span class="score-hud__value" id="scoreValue">{{ score|default:0 }}</span>
+    <span class="score-hud__delta" id="scoreDelta" hidden></span>
+  </div>
+{% endif %}
+</div>
+
+{% if not suppress_toasts %}
+  <!-- Toast root (enabled فقط لو مش معطّل) -->
+  <div id="toast-root" class="toast-root" aria-live="polite" aria-atomic="true"></div>
+  {% if messages %}
+    <div id="server-messages" class="sr-only">
+      {% for message in messages %}
+        <div data-level="{{ message.tags|default:'info' }}">{{ message }}</div>
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endif %}
+
+<main class="container">
+  {% block content %}{% endblock %}
+</main>
+
+{% if not hide_footer %}
+<footer class="footer">
+  <div class="container">
+    <div class="muted">
+      © متواتر — All rights reserved.
+      {% if IS_ALPHA %}
+        <span class="sep"> • </span>
+        <small>
+          {{ APP_VERSION }} — نسخة أولية قيد التطوير.
+          <a href="{% url 'core:complaint' %}">أبلغ عن مشكلة</a>
+        </small>
+      {% endif %}
+    </div>
+  </div>
+</footer>
+{% endif %}
+
+{% if show_splash %}
+<section id="splash" class="splash-overlay" role="status" aria-live="polite">
+  <div class="splash-card">
+    <div class="splash-logo-wrap">
+      <img
+        src="{% static 'img/logo.png' %}"
+        srcset="{% static 'img/logo.png' %} 1x, {% static 'img/logo@2x.png' %} 2x"
+        alt="Mutawatir" class="splash-logo">
+    </div>
+    <div class="splash-text">
+      <blockquote class="hadith">
+        <span class="qmark">«</span>
+        خيرُكم من تعلَّم القرآن وعلَّمه
+        <span class="qmark">»</span>
+      </blockquote>
+      <div class="hadith-src">— رواه البخاري</div>
+    </div>
+  </div>
+</section>
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const s = document.getElementById('splash');
+    if (!s) return;
+    requestAnimationFrame(() => s.classList.add('show'));
+    setTimeout(() => {
+      s.classList.add('hide');
+      s.style.pointerEvents = 'none';
+      setTimeout(() => s.remove(), 420);
+    }, 1600);
+  });
+</script>
+{% endif %}
+
+<script>
+  // Ripple (disabled for <a> unless data-ripple present)
+  document.addEventListener('click', function(e){
+    const btn = e.target.closest('.btn');
+    if (!btn) return;
+    if (btn.tagName === 'A' && !btn.hasAttribute('data-ripple')) return;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const rect = btn.getBoundingClientRect();
+    const size = Math.max(rect.width, rect.height);
+    const r = document.createElement('span');
+    r.className = 'ripple';
+    r.style.position = 'absolute';
+    r.style.width = r.style.height = size + 'px';
+    r.style.left = (e.clientX - rect.left - size / 2) + 'px';
+    r.style.top  = (e.clientY - rect.top  - size / 2) + 'px';
+    btn.appendChild(r);
+    setTimeout(() => r.remove(), 500);
+  }, false);
+
+  // === Score HUD animation ===
+  (function(){
+    const hud  = document.getElementById('score-hud');
+    if(!hud) return;
+    const valueEl = document.getElementById('scoreValue');
+    const deltaEl = document.getElementById('scoreDelta');
+    const score = parseInt(hud.getAttribute('data-score') || '0', 10);
+    const delta = hud.hasAttribute('data-delta') ? parseInt(hud.getAttribute('data-delta') || '0', 10) : 0;
+    valueEl.textContent = isNaN(score) ? '0' : String(score);
+    if (!isNaN(delta) && delta !== 0){
+      deltaEl.textContent = (delta > 0 ? '+' : '') + delta;
+      deltaEl.classList.toggle('pos', delta > 0);
+      deltaEl.classList.toggle('neg', delta < 0);
+      deltaEl.hidden = false;
+      requestAnimationFrame(()=> deltaEl.classList.add('show'));
+      setTimeout(()=>{
+        deltaEl.classList.remove('show');
+        setTimeout(()=>{ deltaEl.hidden = true; }, 280);
+      }, 1500);
+    }
+  })();
+
+  {% if not suppress_toasts %}
+  // Toasts from Django messages (disabled لو suppress_toasts=True)
+  (function(){
+    const wrap = document.getElementById('toast-root');
+    const src  = document.getElementById('server-messages');
+    if(!wrap || !src) return;
+    const levelClass = (lvl)=>{
+      if(!lvl) return 'toast--info';
+      if(lvl.includes('success')) return 'toast--success';
+      if(lvl.includes('error'))   return 'toast--error';
+      if(lvl.includes('warning')) return 'toast--warning';
+      return 'toast--info';
+    };
+    const show = (text, lvl='info', timeout=3600)=>{
+      const t = document.createElement('div');
+      t.className = 'toast ' + levelClass(lvl);
+      t.innerHTML = '<span>'+ text +'</span><button class="toast__close" aria-label="إغلاق" title="إغلاق">&times;</button>';
+      wrap.appendChild(t);
+      const close = ()=>{ t.style.animation = 'toast-out .18s ease-in forwards'; setTimeout(()=>t.remove(), 180); };
+      t.querySelector('.toast__close').addEventListener('click', close);
+      setTimeout(close, timeout);
+    };
+    src.querySelectorAll('div[data-level]').forEach(function(el, i){
+      const lvl = el.getAttribute('data-level') || 'info';
+      const text = (el.textContent || '').trim();
+      setTimeout(()=>show(text, lvl), i * 350);
+    });
+  })();
+  {% endif %}
+
+  // Toggle user menu
+  (function(){
+    const btn = document.getElementById('userMenuBtn');
+    const menu = document.getElementById('userMenu');
+    if(!btn || !menu) return;
+    btn.addEventListener('click', ()=>{
+      const open = !menu.hasAttribute('hidden');
+      if(open){ menu.setAttribute('hidden',''); btn.setAttribute('aria-expanded','false'); }
+      else { menu.removeAttribute('hidden'); btn.setAttribute('aria-expanded','true'); }
+    });
+    document.addEventListener('click', (e)=>{
+      if(!menu || menu.hasAttribute('hidden')) return;
+      if(!e.target.closest('.user-cluster')){ menu.setAttribute('hidden',''); btn.setAttribute('aria-expanded','false'); }
+    });
+  })();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,108 @@
+{% extends "core/base.html" %}
+{% load static i18n %}
+
+{% block title %}إعدادات الحساب — متواتر{% endblock %}
+
+{% block content %}
+<style>
+  .acc-wrap{max-width: 880px; margin: 18px auto; padding: 14px; display:grid; gap:14px}
+  .acc-card{
+    background: linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.015));
+    border:1px solid rgba(255,255,255,.10);
+    border-radius:16px; box-shadow:0 14px 36px rgba(0,0,0,.22);
+    padding: 14px;
+  }
+  .acc-title{ margin:0 0 8px; color:#fff; font-weight:900 }
+  .acc-grid{ display:grid; gap:10px }
+  .row{ display:grid; gap:8px; align-items:center }
+  .two{ grid-template-columns: 160px 1fr }
+  @media (max-width:720px){ .two{ grid-template-columns: 1fr } }
+
+  .avatar-lg{ width:84px; height:84px; border-radius:50%; overflow:hidden; background:#0f1118; border:1px solid rgba(255,255,255,.1); display:grid; place-items:center }
+  .avatar-lg img{ width:100%; height:100%; object-fit:cover }
+  .hint{ color:var(--muted); font-size:.92rem }
+  .form-actions{ display:flex; gap:.6rem; flex-wrap:wrap; margin-top:6px }
+  .btn-lg{ padding:.7rem 1rem; border-radius:12px; font-weight:900 }
+  .input, input[type="file"]{ background:#0f1118; color:#fff; border:1px solid rgba(255,255,255,.12); border-radius:10px; padding:.55rem .65rem; width:100% }
+  label{ color:#fff; font-weight:800 }
+</style>
+
+<div class="acc-wrap" dir="rtl">
+
+  <!-- بيانات عامة + صورة -->
+  <section class="acc-card">
+    <h2 class="acc-title">بيانات الحساب</h2>
+    <form method="post" enctype="multipart/form-data">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="update_profile">
+      <div class="acc-grid">
+        <div class="row two">
+          <label>الصورة الشخصية</label>
+          <div style="display:flex; gap:10px; align-items:center">
+            <span class="avatar-lg">
+              {% if student.avatar %}
+                <img src="{{ student.avatar.url }}" alt="">
+              {% else %}
+                <span style="color:#fff; font-weight:900; font-size:24px">{{ request.user.username|slice:":1"|upper }}</span>
+              {% endif %}
+            </span>
+            <input type="file" name="avatar" accept="image/*">
+            {% if student.avatar %}
+              <label style="display:inline-flex; gap:.35rem; align-items:center">
+                <input type="checkbox" name="remove_avatar" value="1">
+                <span class="hint">حذف الصورة الحالية</span>
+              </label>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="row two">
+          <label for="id_display_name">اسم المستخدم:</label>
+          <input type="text" id="id_display_name" name="display_name" class="input" value="{{ profile_form.display_name.value|default:student.display_name }}">
+        </div>
+
+        <div class="row two">
+          <label for="id_email">البريد الإلكتروني:</label>
+          <input type="email" id="id_email" name="email" class="input" placeholder="اختياري" value="{{ profile_form.email.value|default:request.user.email }}">
+          <div class="hint">بعد حفظه، يمكنك تسجيل الدخول باسم المستخدم أو البريد الإلكتروني.</div>
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary btn-lg">حفظ التغييرات</button>
+          <a href="{% url 'core:main_menu' %}" class="btn btn-outline btn-lg">الرجوع للرئيسية</a>
+        </div>
+      </div>
+    </form>
+  </section>
+
+  <!-- تغيير كلمة المرور -->
+  <section class="acc-card">
+    <h2 class="acc-title">تغيير كلمة المرور</h2>
+    <form method="post">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="change_password">
+      <div class="acc-grid">
+        <div class="row two">
+          <label for="{{ password_form.old_password.id_for_label }}">كلمة المرور الحالية</label>
+          {{ password_form.old_password }}
+        </div>
+        <div class="row two">
+          <label for="{{ password_form.new_password1.id_for_label }}">كلمة المرور الجديدة</label>
+          {{ password_form.new_password1 }}
+        </div>
+        <div class="row two">
+          <label for="{{ password_form.new_password2.id_for_label }}">تأكيد كلمة المرور الجديدة</label>
+          {{ password_form.new_password2 }}
+        </div>
+        <div class="hint">
+          يجب ألا تقل عن 8 أحرف وتحتوي على أحرف وأرقام (وفقًا لمتطلبات الأمان).
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary btn-lg">تحديث كلمة المرور</button>
+        </div>
+      </div>
+    </form>
+  </section>
+
+</div>
+{% endblock %}

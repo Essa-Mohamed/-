@@ -1,0 +1,178 @@
+:root{
+  --bg:#0f1d17;
+  --surface:#0f1d17;
+  --card:#13271f;
+  --text:#e9f5ef;
+  --muted:#b7c8bf;
+
+  --primary:#0f8560;
+  --primary-light:#1aa377;
+
+  --accent:#d4af37;   /* ذهبي */
+  --accent-2:#f1d589;
+
+  --danger:#c0392b;
+
+  /* إضافي للسplash */
+  --gold: #d4af37;
+  --gold-2:#b88900;
+  --ink:#0f172a;
+}
+
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background: radial-gradient(1200px 900px at 100% -200px, rgba(212,175,55,.12), transparent 60%), var(--bg);
+  color:var(--text);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans Arabic", "Noto Sans", sans-serif;
+}
+
+/* ===== Layout ===== */
+.container{max-width:980px;margin-inline:auto;padding:1rem}
+.row{display:flex;align-items:center;justify-content:space-between;gap:.75rem}
+
+/* ===== Topbar & Brand ===== */
+.topbar{
+  border-bottom:1px solid rgba(212,175,55,.2);
+  background: linear-gradient(180deg, rgba(212,175,55,.05), rgba(0,0,0,0));
+}
+.brand{display:flex;align-items:center;gap:.6rem}
+.brand-link{display:flex;align-items:center;gap:.6rem;color:var(--text);text-decoration:none}
+.brand-logo{width:40px;height:40px;object-fit:contain;filter: drop-shadow(0 2px 6px rgba(0,0,0,.15))}
+.brand-text{display:flex;flex-direction:column;line-height:1.05}
+.brand-name-ar{font-weight:900;letter-spacing:.3px}
+.brand-name-en{color:var(--accent);font-weight:800;font-size:.8rem}
+
+.actions{display:flex;align-items:center;gap:.5rem}
+.hello{opacity:.9;margin-inline:.5rem}
+
+/* ===== Buttons & Inputs ===== */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:.4rem;
+  padding:.6rem 1rem;border-radius:10px;border:1px solid transparent;
+  text-decoration:none;cursor:pointer;font-weight:700
+}
+.btn-primary{background:linear-gradient(135deg,var(--accent),var(--accent-2)); color:#1b1b1b; border-color:var(--accent)}
+.btn-outline{background:transparent; border-color:var(--accent); color:var(--accent)}
+.btn-outline.logout:hover{background:#8c1b1b;border-color:#8c1b1b;color:#fff}
+
+.input{
+  width:100%;background:#09130f;border:1px solid rgba(255,255,255,.12);
+  color:var(--text);border-radius:10px;padding:.6rem .75rem
+}
+.input.small{padding:.35rem .5rem;border-radius:8px;font-size:.9rem}
+
+/* ===== Cards & Boxes ===== */
+.card{
+  background:linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,.01));
+  border:1px solid rgba(255,255,255,.1);
+  border-radius:16px; padding:1rem 1.1rem; box-shadow:0 10px 40px rgba(0,0,0,.25)
+}
+.box{
+  background:rgba(255,255,255,.02); border:1px dashed rgba(255,255,255,.1);
+  border-radius:12px; padding:.75rem .9rem
+}
+
+/* ===== Typography helpers ===== */
+.page-title{margin:.25rem 0}
+.section-title{margin:.2rem 0 1rem; color:var(--accent)}
+.section{margin-top:.5rem}
+
+.grid-2{display:grid;grid-template-columns:repeat(2,1fr); gap:.75rem}
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr); gap:.75rem}
+@media(max-width:900px){.grid-2,.grid-3{grid-template-columns:1fr}}
+
+.muted{color:var(--muted)}
+.small{font-size:.9rem}
+
+/* ===== Footer ===== */
+.footer{margin-top:2rem; padding:1.25rem 0; border-top:1px solid rgba(255,255,255,.12)}
+.footer .muted{color:#cfcfcf}
+
+/* ===== Optional hero (لو مستخدم) ===== */
+.hero{padding:2.2rem 0 1rem}
+.hero .logo{width:84px;height:84px; display:block; margin:0 auto .5rem}
+.hero-title{font-size:2.2rem; text-align:center; color:#f7f1d0; text-shadow:0 2px 18px rgba(212,175,55,.25)}
+.hero-subtitle{text-align:center; margin:.25rem auto 1rem; max-width:820px}
+.hero .cta{display:flex; gap:.6rem; justify-content:center}
+
+/* ===== Scope label (لو مستخدم) ===== */
+.scope-label{
+  background:linear-gradient(135deg, #fff8ec22, #f3efe622);
+  border-left:6px solid var(--accent);
+  padding:.55rem 1rem; border-radius:8px; margin:0 0 1rem;
+  box-shadow:0 6px 25px rgba(212,175,55,0.12)
+}
+
+/* ===== Nice checkbox (لو مستخدم) ===== */
+.nice-checkbox{display:flex; gap:.6rem; align-items:center; margin:.35rem 0}
+.nice-checkbox input{width:1.15rem;height:1.15rem; accent-color: var(--accent)}
+.nice-checkbox span{font-weight:700}
+
+/* ===== Forms ===== */
+.form-control{display:grid; gap:.3rem}
+
+/* =========================================================
+   Splash Overlay (Logo + Hadith)
+   ========================================================= */
+.splash-overlay{
+  position: fixed; inset: 0;
+  display: grid; place-items: center;
+  background: rgba(0,0,0,.70);
+  z-index: 999;
+  opacity: 0; transform: translateY(8px) scale(.98);
+  transition: opacity .28s ease, transform .28s ease;
+}
+.splash-overlay.show{ opacity: 1; transform: none; }
+.splash-overlay.hide{ opacity: 0; transform: translateY(-8px) scale(.98); }
+
+.splash-card{
+  position: relative;
+  display: flex; align-items: center; gap: 14px;
+  padding: 14px 16px;
+  border: 1px solid rgba(212,175,55,.35);
+  border-radius: 16px;
+  background: #fff;
+  color: var(--ink);
+  box-shadow: 0 14px 30px rgba(0,0,0,.25);
+  max-width: 640px;
+  margin: 0 16px;
+}
+
+.splash-logo-wrap{
+  position: relative; width: 60px; height: 60px;
+  display: grid; place-items: center; isolation: isolate;
+}
+.splash-logo{
+  width: 48px; height: 48px; object-fit: contain; z-index: 1;
+  filter: drop-shadow(0 2px 6px rgba(0,0,0,.12));
+}
+.splash-logo-wrap::before{
+  content:""; position:absolute; inset:0; border-radius:50%;
+  border: 2px solid rgba(212,175,55,.55);
+  box-shadow: 0 0 0 6px rgba(212,175,55,.10), inset 0 0 18px rgba(212,175,55,.12);
+}
+
+.splash-text{ display:flex; flex-direction:column; }
+.hadith{
+  margin: 0; font-weight: 800;
+  font-size: clamp(16px, 2.2vw, 18px);
+  line-height: 1.9; letter-spacing: .1px;
+}
+.hadith .qmark{ color: var(--gold-2); }
+.hadith-src{
+  margin-top: 2px; font-size: 12px; color: #8b95a5; font-weight: 600;
+}
+
+.splash-card::after{
+  content:""; position:absolute; left: 22px; right: 22px; bottom: 10px;
+  height: 2px; border-radius: 2px;
+  background: linear-gradient(90deg, transparent, var(--gold), transparent);
+  opacity: .5;
+}
+
+@media (max-width: 560px){
+  .splash-card{ flex-direction: column; text-align: center; gap: 10px; }
+  .splash-logo-wrap{ width: 56px; height: 56px; }
+  .splash-logo{ width: 44px; height: 44px; }
+}

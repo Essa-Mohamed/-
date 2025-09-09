@@ -1,0 +1,58 @@
+{% extends "core/base.html" %}
+{% load static i18n arabic_extras %}
+
+{% block title %}إحصائياتك — متواتر{% endblock %}
+
+{% block content %}
+<style>
+  .s-wrap{max-width:980px; margin:18px auto; padding:14px; color:#fff}
+  .s-head{
+    border:1px solid rgba(212,175,55,.22);
+    background: linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.015));
+    border-radius:16px; box-shadow:0 14px 36px rgba(0,0,0,.22);
+    padding:14px 16px; display:grid; gap:8px;
+  }
+  .s-title{margin:0; font-weight:900}
+  .s-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-top:6px}
+  @media (max-width:900px){ .s-grid{grid-template-columns:repeat(2,1fr)} }
+  @media (max-width:540px){ .s-grid{grid-template-columns:1fr} }
+  .card{
+    background:#0f1118; border:1px solid rgba(255,255,255,.10);
+    border-radius:14px; padding:12px; display:grid; gap:4px; text-align:center
+  }
+  .num{ font-size:1.6rem; font-weight:900 }
+  .lbl{ color:#c8d1cf; font-weight:800 }
+  .ok .num{ color:#22c55e } .no .num{ color:#ef4444 } .muted .num{ color:#e5d18f }
+
+  .s-actions{display:flex; gap:.6rem; margin-top:10px; flex-wrap:wrap}
+</style>
+
+<div class="s-wrap" dir="rtl">
+  <header class="s-head">
+    <h1 class="s-title">إحصائياتك</h1>
+    <div class="s-grid">
+      <div class="card muted">
+        <div class="num">{{ stats.exams|arabic_digits }}</div>
+        <div class="lbl">الاختبارات المُنجزة</div>
+      </div>
+      <div class="card ok">
+        <div class="num">{{ stats.correct|arabic_digits }}</div>
+        <div class="lbl">إجابات صحيحة</div>
+      </div>
+      <div class="card no">
+        <div class="num">{{ stats.wrong|arabic_digits }}</div>
+        <div class="lbl">إجابات خاطئة</div>
+      </div>
+      <div class="card">
+        <div class="num">{{ stats.unanswered|arabic_digits }}</div>
+        <div class="lbl">غير مُجاب</div>
+      </div>
+    </div>
+
+    <div class="s-actions">
+      <a href="{% url 'core:test_selection' %}" class="btn btn-primary">بدء اختبار جديد</a>
+      <a href="{% url 'core:main_menu' %}" class="btn btn-outline">الرجوع للرئيسية</a>
+    </div>
+  </header>
+</div>
+{% endblock %}

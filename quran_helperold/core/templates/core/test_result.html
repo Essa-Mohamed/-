@@ -1,0 +1,223 @@
+{% extends "core/base.html" %}
+{% load static i18n arabic_extras highlight %}
+
+{% block title %}نتيجة الاختبار — متواتر{% endblock %}
+
+{% block content %}
+<style>
+  :root{
+    --r-text:#f3f4f6;
+    --r-sub:#9aa3b2;
+    --r-card:#11131d;
+    --r-gold:#d4af37;
+    --r-gold-2:#b88900;
+    --r-ring: rgba(212,175,55,.35);
+    --r-green:#22c55e;
+    --r-red:#ef4444;
+    --r-muted:#1d2230;
+    --r-shadow: 0 12px 36px rgba(0,0,0,.28);
+    --r-radius: 16px;
+  }
+
+  .r-wrap{max-width: 980px; margin: 20px auto; padding: 14px; color: var(--r-text)}
+  .r-header{
+    border:1px solid rgba(212,175,55,.22);
+    background: linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.015));
+    border-radius: var(--r-radius);
+    box-shadow: var(--r-shadow);
+    padding: 14px 16px;
+    display: grid; gap: 10px;
+  }
+  .r-scope{color: var(--r-sub); font-weight: 800}
+
+  .r-top{
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 12px; align-items: center;
+  }
+  @media(max-width: 720px){ .r-top{grid-template-columns: 1fr} }
+
+  .r-score{
+    display:flex; gap:10px; align-items:center; flex-wrap:wrap;
+  }
+  .r-chip{
+    display:inline-flex; align-items:center; gap:.45rem;
+    background:#0f1118; color:var(--r-text);
+    border:1px solid rgba(255,255,255,.10);
+    border-radius: 999px; padding: .42rem .7rem; font-weight: 800;
+  }
+  .r-chip.ok{ border-color: rgba(34,197,94,.45) }
+  .r-chip.no{ border-color: rgba(239,68,68,.45) }
+
+  /* === Thermometer (صح أخضر + خطأ أحمر) === */
+  .r-bar{
+    min-width: 220px; width: 100%;
+    height: 14px; background: var(--r-muted); border-radius: 999px; overflow: hidden;
+    border:1px solid rgba(255,255,255,.08);
+    display:flex;
+  }
+  .r-bar > span{
+    display:block; height:100%; width:0%;
+    transition: width .4s ease;
+  }
+  .r-bar > .ok{ background: linear-gradient(90deg,#16a34a,#22c55e) }
+  .r-bar > .no{ background: linear-gradient(90deg,#ef4444,#f87171) }
+
+  .r-actions{display:flex; gap:10px; flex-wrap:wrap; justify-content:flex-start}
+  .btn{
+    appearance:none; border:1px solid transparent; border-radius:12px;
+    padding: 10px 14px; font-weight: 900; cursor: pointer;
+  }
+  .btn-primary{background: linear-gradient(180deg,var(--r-gold),var(--r-gold-2)); color:#1a1200; border-color: rgba(212,175,55,.55)}
+  .btn-outline{background:#0f1118; color:var(--r-text); border-color: rgba(255,255,255,.12)}
+  .btn-ghost{background:#0f1118; color:var(--r-text); border-color: rgba(255,255,255,.08)}
+
+  /* قائمة النتائج */
+  .r-list{display:grid; gap:12px; margin-top: 14px}
+  .r-item{
+    background: linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.015));
+    border:1px solid rgba(255,255,255,.10);
+    border-radius: var(--r-radius);
+    box-shadow: var(--r-shadow);
+    padding: 12px 14px;
+    display:grid; gap:8px;
+  }
+  .r-head{display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap}
+  .r-phrase{margin:0; font-weight: 900; color:#fff}
+  .status{
+    font-weight:900; border-radius:10px; padding:.35rem .6rem;
+    border:1px solid rgba(255,255,255,.1);
+  }
+  .ok .status{ background: linear-gradient(135deg, rgba(34,197,94,.14), rgba(34,197,94,.08)); color:#eafff3; border-color:#22c55e }
+  .no .status{ background: linear-gradient(135deg, rgba(239,68,68,.14), rgba(239,68,68,.08)); color:#ffecec; border-color:#ef4444 }
+
+  .meta{
+    display:flex; gap:8px; flex-wrap:wrap; align-items:center;
+    color: var(--r-sub); font-weight: 800
+  }
+  .m-chip{
+    border:1px solid rgba(255,255,255,.10); border-radius: 999px;
+    padding:.25rem .55rem; background:#0f1118;
+  }
+
+  /* تفاصيل الأماكن */
+  details{border-top:1px dashed rgba(255,255,255,.12); padding-top: 8px}
+  summary{cursor:pointer; color: var(--r-gold); font-weight: 900}
+  .occ-list{list-style:none; padding: 8px 0 0; margin:0; display:grid; gap:10px}
+  .ayah{
+    background:#0f1118; border:1px solid rgba(255,255,255,.08);
+    border-radius:12px; padding:10px 12px; display:grid; gap:4px
+  }
+  .ayah-meta{color:var(--r-sub); font-size:.92rem; font-weight: 800}
+  .ayah-text{line-height: 1.9}
+
+  /* شريط أدوات القائمة */
+  .r-toolstrip{display:flex; gap:8px; align-items:center; margin-top: 6px}
+  .btn-sm{padding:.35rem .55rem; border-radius: 10px}
+
+  /* Toast صغير */
+  .toast{
+    position: fixed; inset-inline: 16px; bottom: 16px; z-index: 50;
+    display:none; padding:10px 12px; border-radius: 12px; font-weight: 800;
+    background:#0f1118; color:#fff; border:1px solid rgba(212,175,55,.4);
+    box-shadow: 0 10px 30px rgba(0,0,0,.35);
+  }
+  .toast.show{display:inline-block; animation: fadein .2s ease, fadeout .2s ease 2.6s forwards;}
+  @keyframes fadein{from{opacity:0; transform: translateY(6px)} to{opacity:1; transform: translateY(0)}}
+  @keyframes fadeout{to{opacity:0; transform: translateY(6px)}}
+</style>
+
+<div class="r-wrap" dir="rtl">
+  <div id="toast" class="toast" aria-live="polite" aria-atomic="true"></div>
+
+  <header class="r-header">
+    <div class="r-scope">{{ scope_label }}</div>
+
+    <div class="r-top">
+      <div class="r-score">
+        <span class="r-chip">النتيجة: <b>{{ score|arabic_digits }}</b> / <b>{{ total|arabic_digits }}</b></span>
+        <span class="r-chip ok">صحيح: <b>{{ score|arabic_digits }}</b></span>
+        <span class="r-chip no">خطأ: <b>{{ wrong|arabic_digits }}</b></span>
+      </div>
+
+      <!-- ترمومتر: أخضر (صح) + أحمر (خطأ) -->
+      <div class="r-bar" id="rBar" data-score="{{ score }}" data-total="{{ total }}" data-wrong="{{ wrong }}"><span class="ok"></span><span class="no"></span></div>
+    </div>
+
+    <div class="r-actions">
+      <a class="btn btn-primary" href="{% url 'core:test_selection' %}">ابدأ اختبارًا جديدًا</a>
+      <a class="btn btn-outline" href="{% url 'core:main_menu' %}">الرجوع للرئيسية</a>
+      <button type="button" class="btn btn-ghost" id="toggleAll">إظهار كل التفاصيل</button>
+    </div>
+  </header>
+
+  <section class="r-list">
+    {% for item in detailed_results %}
+    {% with ga=item.given_answer|default_if_none:0 cc=item.correct_count|default_if_none:0 %}
+    <article class="r-item {% if ga|add:0 == cc|add:0 %}ok{% else %}no{% endif %}">
+      <div class="r-head">
+        <h3 class="r-phrase">{{ item.phrase }}</h3>
+        <span class="status">{% if ga|add:0 == cc|add:0 %}إجابة صحيحة{% else %}إجابة خاطئة{% endif %}</span>
+      </div>
+
+      <div class="meta">
+        <span class="m-chip">إجابة الطالب:
+          <b>{% if item.given_answer is not None %}{{ item.given_answer|arabic_digits }}{% else %}—{% endif %}</b>
+        </span>
+        <span class="m-chip">الإجابة الصحيحة: <b>{{ cc|arabic_digits }}</b></span>
+        <span class="m-chip">عدد المواضع: <b>{{ item.occurrences|length|arabic_digits }}</b></span>
+      </div>
+
+      <!-- تُفتح تلقائيًا لو الإجابة خاطئة -->
+      <details {% if ga|add:0 != cc|add:0 %}open{% endif %}>
+        <summary>عرض مواضع العبارة</summary>
+        <ol class="occ-list">
+          {% for a in item.occurrences %}
+          <li class="ayah">
+            <div class="ayah-meta">
+              سورة {{ a.surah|arabic_digits }}:{{ a.number|arabic_digits }}
+              {% if a.juz_number %} — الجزء {{ a.juz_number|arabic_digits }}{% endif %}
+              {% if a.quarter_label %} — {{ a.quarter_label }}{% endif %}
+            </div>
+            <div class="ayah-text">{{ a.text|highlight:item.phrase }}</div>
+          </li>
+          {% endfor %}
+        </ol>
+      </details>
+    </article>
+    {% endwith %}
+    {% empty %}
+      <div class="r-item">لا توجد تفاصيل لعرضها.</div>
+    {% endfor %}
+  </section>
+</div>
+
+<script>
+  (function(){
+    // ترمومتر: يحسب نسب الصحيح/الخطأ ويملأ الشريحتين
+    const bar = document.getElementById('rBar');
+    if (bar){
+      const s = parseInt(bar.dataset.score || '0', 10) || 0;
+      const t = parseInt(bar.dataset.total || '1', 10) || 1;
+      const w = Math.max(0, t - s); // في حال لم يمرّر wrong
+      const okPct = Math.max(0, Math.min(100, Math.round((s*100)/t)));
+      const noPct = 100 - okPct;
+      const ok = bar.querySelector('.ok');
+      const no = bar.querySelector('.no');
+      if (ok) ok.style.width = okPct + '%';
+      if (no) no.style.width = noPct + '%';
+    }
+
+    // إظهار/إخفاء كل التفاصيل
+    const btn = document.getElementById('toggleAll');
+    if (btn){
+      btn.addEventListener('click', ()=>{
+        const details = document.querySelectorAll('.r-list details');
+        const someClosed = Array.from(details).some(d => !d.open);
+        details.forEach(d => d.open = someClosed);
+        btn.textContent = someClosed ? 'إخفاء كل التفاصيل' : 'إظهار كل التفاصيل';
+      });
+    }
+  })();
+</script>
+{% endblock %}

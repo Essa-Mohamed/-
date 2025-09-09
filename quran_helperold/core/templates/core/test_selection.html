@@ -1,0 +1,286 @@
+{% extends "core/base.html" %}
+{% load static i18n arabic_extras %}
+
+{% block title %}بدء اختبار — متواتر{% endblock %}
+
+{% block content %}
+<style>
+  .page-shell{min-height:72vh; display:grid; gap:1rem}
+
+  .header-card{
+    border:1px solid rgba(212,175,55,.22);
+    background: linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.015));
+    border-radius:16px; padding:1rem 1.1rem; box-shadow:0 18px 44px rgba(0,0,0,.22);
+  }
+  .header-card h1{margin:.25rem 0 .2rem; color:#fff; font-weight:900}
+  .sub{color:var(--muted); margin:0}
+  .scope-tools{display:flex; align-items:center; justify-content:space-between; gap:.6rem; margin-top:.6rem}
+  .tiny-link{
+    background:#0c1713; border:1px solid rgba(255,255,255,.10);
+    color:var(--accent); font-weight:800; cursor:pointer;
+    padding:.35rem .6rem; border-radius:10px;
+  }
+  .tiny-link:hover{filter:brightness(1.05)}
+  .stats{display:flex; gap:.6rem; flex-wrap:wrap; font-weight:800}
+  .stat-chip{
+    display:inline-flex; gap:.45rem; align-items:center;
+    background:#0c1713; border:1px solid rgba(255,255,255,.10);
+    padding:.42rem .7rem; border-radius:999px; color:var(--text);
+  }
+  .stat-chip .dot{width:8px;height:8px;border-radius:50%}
+  .stat-chip .dot.juz{background:#16a34a}
+  .stat-chip .dot.quarter{background:var(--accent)}
+
+  .accordion{display:grid; gap:.7rem}
+  .ac-item{
+    background:linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.015));
+    border:1px solid rgba(255,255,255,.10);
+    border-radius:14px; box-shadow:0 8px 26px rgba(0,0,0,.18);
+  }
+  .ac-head{display:flex; align-items:center; gap:.6rem; padding:.65rem .75rem; justify-content:space-between}
+  .ac-left{display:flex; align-items:center; gap:.55rem}
+  .ac-title{margin:0; color:#fff; font-weight:900; font-size:1rem}
+  .tiny{font-size:.85rem; color:var(--muted)}
+  .expand{
+    background:transparent; border:none; color:var(--accent); font-weight:800; cursor:pointer;
+    padding:.25rem .4rem; border-radius:8px;
+  }
+  .expand:hover{text-decoration: underline}
+
+  .juz-all{position:relative; display:inline-grid; place-items:center; width:22px; height:22px; cursor:pointer}
+  .juz-all input{ position:absolute; inset:0; opacity:0; cursor:pointer; }
+  .juz-all .box{
+    width:20px; height:20px; border-radius:6px;
+    border:1px solid rgba(255,255,255,.18); background:#0c1713;
+    box-shadow: inset 0 0 0 0 var(--accent); transition: box-shadow .18s ease, border-color .18s ease;
+  }
+  .juz-all input:checked + .box{
+    border-color: var(--accent);
+    box-shadow: inset 0 0 0 999px var(--accent);
+  }
+
+  .ac-panel{ padding: .1rem 0 .7rem; border-top:1px dashed rgba(255,255,255,.12) }
+  .ac-panel[hidden]{ display:none !important; }
+
+  .q-list{ display:grid; gap:.45rem; padding:.55rem .75rem .1rem }
+  @media (min-width: 720px){
+    .q-list{ grid-template-columns: 1fr 1fr }
+  }
+
+  .q-item-row{
+    position: relative;
+    display:grid; grid-template-columns: auto 1fr; gap:.5rem; align-items:center;
+    padding:.45rem .6rem; border-radius:10px;
+    border:1px solid rgba(255,255,255,.12); background:#0c1713; color:var(--text);
+    cursor:pointer; user-select:none;
+  }
+  .q-item-row input{ position:absolute; inset:0; opacity:0; cursor:pointer; }
+  .q-item-row .tick{
+    width:18px; height:18px; border-radius:5px;
+    border:1px solid rgba(255,255,255,.2); background:transparent; position:relative;
+  }
+  .q-item-row input:checked + .tick{
+    background: linear-gradient(135deg,var(--accent),var(--accent-2)); border-color:var(--accent);
+  }
+  .q-item-row input:checked + .tick::after{
+    content:""; position:absolute; inset:3px 5px 3px 3px;
+    border:2px solid #1b1b1b; border-top:0; border-left:0; transform:rotate(45deg);
+  }
+  .q-name{ font-weight:900 }
+  .q-meta{ font-size:.85rem; color:var(--muted); margin-inline-start:.35rem }
+
+  .controls-card{
+    border:1px solid rgba(255,255,255,.10);
+    background: linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.015));
+    border-radius:16px; padding: .8rem 1rem; box-shadow:0 12px 32px rgba(0,0,0,.2);
+  }
+  .controls{
+    display:grid; grid-template-columns: 1fr 1fr; gap:.8rem; align-items:center;
+  }
+  @media (max-width: 900px){ .controls{ grid-template-columns:1fr; } }
+
+  .seg{
+    display:flex; flex-wrap:wrap; gap:.4rem;
+    background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.10);
+    padding:.35rem; border-radius:12px;
+  }
+  .seg input{display:none}
+  .seg label{
+    padding:.45rem .8rem; border-radius:10px; cursor:pointer; font-weight:900;
+    border:1px solid rgba(255,255,255,.10); background:#0c1713; color:var(--text);
+  }
+  .seg input:checked + label{
+    background: linear-gradient(135deg,var(--accent),var(--accent-2)); color:#1b1b1b;
+    border-color: var(--accent);
+  }
+
+  .actions{ display:flex; gap:.6rem; flex-wrap:wrap; justify-content:center; margin-top: .2rem }
+  .btn-lg{padding:.8rem 1.15rem; border-radius:12px; font-weight:900}
+</style>
+
+<form method="post" action="{% url 'core:test_selection' %}">
+  {% csrf_token %}
+  <div class="page-shell">
+    <section class="header-card">
+      <h1>اختيار النطاق</h1>
+      <p class="sub">اختر الأجزاء المطلوبة ثم افتح أي جزء لتحديد أرباعه (إن رغبت).</p>
+
+      <div class="scope-tools">
+        <button type="button" id="expandAll" class="tiny-link" data-state="closed">إظهار كل الأرباع</button>
+        <div class="stats" id="stats">
+          <span class="stat-chip"><span class="dot juz"></span> أجزاء مختارة: <b id="juzCount">0</b></span>
+          <span class="stat-chip"><span class="dot quarter"></span> أرباع مختارة: <b id="qCount">0</b></span>
+        </div>
+      </div>
+    </section>
+
+    <section class="accordion" aria-label="اختيار الأجزاء والأرباع">
+      {% for j, data in juz_quarters_map.items %}
+      <article class="ac-item" data-juz="{{ j.number }}">
+        <div class="ac-head">
+          <div class="ac-left">
+            <label class="juz-all" title="تحديد الجزء كاملًا">
+              <input type="checkbox" class="juz-toggle" name="selected_juz" value="{{ j.number }}">
+              <span class="box" aria-hidden="true"></span>
+            </label>
+            <h3 class="ac-title">الجزء {{ j.number|arabic_digits }}</h3>
+            <span class="tiny">— {{ data.first_label }}</span>
+          </div>
+          <button type="button" class="expand" aria-expanded="false" aria-controls="q-{{ j.number }}">إظهار الأرباع</button>
+        </div>
+
+        <div class="ac-panel" id="q-{{ j.number }}" hidden>
+          <div class="q-list">
+            {% for q in data.quarters %}
+            <label class="q-item-row">
+              <input type="checkbox" class="q-item" name="selected_quarters" value="{{ q.id }}">
+              <span class="tick" aria-hidden="true"></span>
+              <span class="q-name">الربع {{ q.index_in_juz }}</span>
+              <span class="q-meta">{{ q.label }}</span>
+            </label>
+            {% endfor %}
+          </div>
+        </div>
+      </article>
+      {% endfor %}
+    </section>
+
+    <section class="controls-card" aria-label="إعدادات الاختبار">
+      <div class="controls">
+        <!-- عدد الأسئلة -->
+        <div>
+          <div class="tiny" style="margin:0 .2rem .35rem">عدد الأسئلة</div>
+          <div class="seg">
+            {% for n in num_questions_options %}
+              <input type="radio" id="q{{ n }}" name="num_questions" value="{{ n }}" {% if forloop.first %}checked{% endif %}>
+              <label for="q{{ n }}">{{ n }}</label>
+            {% endfor %}
+          </div>
+        </div>
+
+        <!-- مستوى الصعوبة (مخفي تلقائيًا لو نوع الامتحان هو الصفحات) -->
+        {% if selected_test_type != 'similar_on_pages' %}
+        <div>
+          <div class="tiny" style="margin:0 .2rem .35rem">مستوى الصعوبة</div>
+          <div class="seg">
+            <input type="radio" id="d-mixed" name="difficulty" value="mixed" checked>
+            <label for="d-mixed">مختلط</label>
+
+            <input type="radio" id="d-easy" name="difficulty" value="easy">
+            <label for="d-easy">سهل</label>
+
+            <input type="radio" id="d-medium" name="difficulty" value="medium">
+            <label for="d-medium">متوسط</label>
+
+            <input type="radio" id="d-hard" name="difficulty" value="hard">
+            <label for="d-hard">صعب</label>
+          </div>
+        </div>
+        {% endif %}
+      </div>
+    </section>
+
+    <!-- أزرار -->
+    <section class="actions">
+      <a href="{% url 'core:main_menu' %}" class="btn btn-outline btn-lg">الرجوع للرئيسية</a>
+      <button class="btn btn-primary btn-lg" type="submit">ابدأ الاختبار</button>
+      <button class="btn btn-outline btn-lg" type="button" id="clearAll">تفريغ الاختيارات</button>
+    </section>
+  </div>
+</form>
+
+<script>
+  (function(){
+    const items = document.querySelectorAll('.ac-item');
+    const expandAll = document.getElementById('expandAll');
+    const qCount = document.getElementById('qCount');
+    const jCount = document.getElementById('juzCount');
+    const clearBtn = document.getElementById('clearAll');
+
+    function recalc(){
+      const quarters = document.querySelectorAll('.q-item:checked');
+      const juz = document.querySelectorAll('.juz-toggle:checked');
+      if(qCount) qCount.textContent = quarters.length;
+      if(jCount) jCount.textContent = juz.length;
+    }
+
+    function setOpen(card, open){
+      const btn = card.querySelector('.expand');
+      const panel = card.querySelector('.ac-panel');
+      if(!btn || !panel) return;
+      panel.toggleAttribute('hidden', !open);
+      btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+      btn.textContent = open ? 'إخفاء الأرباع' : 'إظهار الأرباع';
+    }
+
+    items.forEach(card=>{
+      const btn = card.querySelector('.expand');
+      const panel = card.querySelector('.ac-panel');
+      const toggle = card.querySelector('.juz-toggle');
+      const quarters = card.querySelectorAll('.q-item');
+
+      if(btn && panel){
+        btn.addEventListener('click', ()=>{
+          const isOpen = !panel.hasAttribute('hidden');
+          setOpen(card, !isOpen);
+        });
+      }
+
+      if(toggle){
+        toggle.addEventListener('change', ()=>{
+          quarters.forEach(q => { q.checked = toggle.checked; });
+          recalc();
+        });
+      }
+
+      quarters.forEach(q=>{
+        q.addEventListener('change', ()=>{
+          if(toggle){
+            toggle.checked = Array.from(quarters).every(x => x.checked);
+          }
+          recalc();
+        });
+      });
+    });
+
+    if(expandAll){
+      expandAll.addEventListener('click', ()=>{
+        const open = expandAll.getAttribute('data-state') !== 'open';
+        items.forEach(card => setOpen(card, open));
+        expandAll.setAttribute('data-state', open ? 'open' : 'closed');
+        expandAll.textContent = open ? 'إخفاء كل الأرباع' : 'إظهار كل الأرباع';
+      });
+    }
+
+    if(clearBtn){
+      clearBtn.addEventListener('click', ()=>{
+        document.querySelectorAll('.q-item, .juz-toggle').forEach(x=> x.checked = false);
+        recalc();
+        window.scrollTo({top:0, behavior:'smooth'});
+      });
+    }
+
+    recalc();
+  })();
+</script>
+{% endblock %}
