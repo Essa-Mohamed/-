@@ -1,0 +1,19 @@
+{% extends "core/base.html" %}
+{% load static %}
+
+{% block title %}Demo المصحف الإلكتروني{% endblock %}
+
+{% block content %}
+<div class="container" style="padding:1rem">
+  <h2>Demo المصحف الإلكتروني (صفحات تجريبية)</h2>
+  <p>اختر صفحة لتجربة التراكب:</p>
+  <ul>
+    {% for p in pages %}
+      <li><a href="{% url 'mushaf_app:demo_page' p %}">صفحة {{ p }}</a></li>
+    {% endfor %}
+  </ul>
+</div>
+{% endblock %}
+
+
+

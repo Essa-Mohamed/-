@@ -156,17 +156,17 @@ class TestCatalogView(TemplateView):
                 'url': reverse('tests:similar_count:selection')
             },
             {
-                'key': 'similar_on_pages',
+                'key': 'similar_positions_on_pages',
                 'title': 'مواضع المتشابهات على الصفحات',
-                'desc': 'اختبار لمعرفة الصفحات التي تظهر فيها عبارة معينة',
-                'available': True,
-                'url': reverse('tests:similar_on_pages:selection')
+                'desc': 'اختبار لتحديد موقع كل موضع للعبارة المتشابهة (الجزء → الربع → الصفحة)',
+                'available': False,
+                'url': reverse('tests:similar_positions_on_pages:selection')
             },
             {
                 'key': 'verse_location_quarters',
                 'title': 'موقع الآيات في الأرباع',
                 'desc': 'اختبار لمعرفة الربع الذي توجد فيه آية معينة',
-                'available': True,
+                'available': False,
                 'url': reverse('tests:verse_location_quarters:selection')
             },
             {

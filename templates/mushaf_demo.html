@@ -1,0 +1,272 @@
+<!-- quran/templates/mushaf_demo.html -->
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <title>تجربة المصحف التفاعلي</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link href="/static/css/mushaf.css" rel="stylesheet" />
+  <style>
+    .demo-controls {
+      background: #fff;
+      padding: 20px;
+      border-radius: 12px;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 15px rgba(0,0,0,.1);
+    }
+    
+    .page-selector {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    
+    .page-input {
+      padding: 8px 12px;
+      border: 2px solid #cfe8df;
+      border-radius: 8px;
+      font-size: 16px;
+      width: 80px;
+      text-align: center;
+    }
+    
+    .page-btn {
+      padding: 8px 16px;
+      background: #22c55e;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: background 0.2s;
+    }
+    
+    .page-btn:hover {
+      background: #16a34a;
+    }
+    
+    .page-btn:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+    
+    .quick-pages {
+      display: flex;
+      gap: 5px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+    }
+    
+    .quick-page {
+      padding: 4px 8px;
+      background: #f0f9ff;
+      border: 1px solid #0ea5e9;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 12px;
+      transition: all 0.2s;
+    }
+    
+    .quick-page:hover {
+      background: #0ea5e9;
+      color: white;
+    }
+  </style>
+</head>
+<body>
+  <div class="page-wrap">
+    <div class="demo-controls">
+      <h2 style="margin: 0 0 15px 0; color: #2d5a4f;">تجربة المصحف التفاعلي</h2>
+      
+      <div class="page-selector">
+        <label for="pageInput">رقم الصفحة:</label>
+        <input type="number" id="pageInput" class="page-input" min="1" max="604" value="3">
+        <button id="goBtn" class="page-btn">انتقل</button>
+        <button id="prevBtn" class="page-btn">السابق</button>
+        <button id="nextBtn" class="page-btn">التالي</button>
+      </div>
+      
+      <div class="quick-pages">
+        <span style="font-weight: bold; margin-left: 10px;">صفحات سريعة:</span>
+        <span class="quick-page" data-page="1">1</span>
+        <span class="quick-page" data-page="2">2</span>
+        <span class="quick-page" data-page="3">3</span>
+        <span class="quick-page" data-page="4">4</span>
+        <span class="quick-page" data-page="5">5</span>
+        <span class="quick-page" data-page="10">10</span>
+        <span class="quick-page" data-page="20">20</span>
+        <span class="quick-page" data-page="50">50</span>
+        <span class="quick-page" data-page="100">100</span>
+      </div>
+    </div>
+
+    <div class="page-header">
+      <strong class="page-title">صفحة <span id="currentPage">3</span></strong>
+      <span id="log" class="page-log">اضغط على أي آية…</span>
+    </div>
+
+    <div class="mushaf-box">
+      <div id="svgHost" class="svg-host"></div>
+      <div id="overlayHost" class="overlay"></div>
+    </div>
+  </div>
+
+<script>
+let currentPage = 3;
+
+// تحميل صفحة
+async function loadPage(pageNum) {
+  if (pageNum < 1 || pageNum > 604) {
+    document.getElementById('log').textContent = 'رقم الصفحة غير صحيح (1-604)';
+    return;
+  }
+  
+  currentPage = pageNum;
+  document.getElementById('currentPage').textContent = pageNum;
+  document.getElementById('pageInput').value = pageNum;
+  document.getElementById('log').textContent = 'جاري التحميل...';
+  
+  // تحديث حالة الأزرار
+  document.getElementById('prevBtn').disabled = pageNum <= 1;
+  document.getElementById('nextBtn').disabled = pageNum >= 604;
+  
+  try {
+    // 1) حقن SVG الصفحة inline
+    const svgUrl = "/static/mushaf/svg/page" + String(pageNum).padStart(3, '0') + ".svg";
+    const svgText = await fetch(svgUrl).then(r => {
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      return r.text();
+    });
+    
+    const svgHost = document.getElementById('svgHost');
+    svgHost.innerHTML = svgText;
+    const svg = svgHost.querySelector('svg');
+    
+    if (!svg) { 
+      document.getElementById('log').textContent = "SVG غير موجود"; 
+      return; 
+    }
+
+    // تأكد من viewBox
+    if (!svg.getAttribute('viewBox')) {
+      const w = parseFloat(svg.getAttribute('width') || 1200);
+      const h = parseFloat(svg.getAttribute('height') || 1800);
+      svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
+    }
+    
+    const [minX, minY, vbW, vbH] = svg.getAttribute('viewBox').split(/\s+/).map(Number);
+
+    // 2) بيانات الآيات
+    const meta = await fetch(`/quran/api/page/${pageNum}/meta/`).then(r => {
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      return r.json();
+    });
+    const items = meta.items;
+
+    // 3) طبقة فوقية
+    const overlayHost = document.getElementById('overlayHost');
+    overlayHost.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${minX} ${minY} ${vbW} ${vbH}" preserveAspectRatio="xMidYMid meet"></svg>`;
+    const osvg = overlayHost.querySelector('svg');
+
+    // 4) إعداد القياس
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    const FONT = (vbW * 0.018);
+    ctx.font = `${FONT}px HafsSmart`;
+
+    // 5) هندسة الصفحة
+    const LINES = 15;
+    const topPad = vbH * 0.065;
+    const bottomPad = vbH * 0.06;
+    const usableH = vbH - topPad - bottomPad;
+    const lineY = (ln) => minY + topPad + ((ln - 0.5) * usableH / LINES);
+    const rightMargin = minX + vbW * 0.06;
+
+    // تجميع آيات كل سطر
+    const byLine = {};
+    for (const it of items) (byLine[it.line] ||= []).push(it);
+
+    // 6) رسم صناديق الآيات
+    const cache = {};
+    for (let ln = 1; ln <= LINES; ln++) {
+      const arr = byLine[ln] || [];
+      let offsetX = rightMargin;
+      for (const it of arr) {
+        const key = `${it.surah}:${it.ayah}`;
+        if (!cache[key]) {
+          const t = (it.text || '').replace(/\s+/g, ' ').trim();
+          const w = ctx.measureText(t).width;
+          cache[key] = { w, t };
+        }
+        const w = cache[key].w;
+        const h = vbH * 0.045;
+        const y = lineY(ln) - h/2;
+
+        const r = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+        r.setAttribute('x', offsetX);
+        r.setAttribute('y', y);
+        r.setAttribute('width', w);
+        r.setAttribute('height', h);
+        r.setAttribute('fill', 'transparent');
+        r.setAttribute('data-ayah', key);
+        r.style.cursor = 'pointer';
+        r.style.pointerEvents = 'all';
+        
+        r.addEventListener('mouseenter', () => r.classList.add('ayah-hover'));
+        r.addEventListener('mouseleave', () => r.classList.remove('ayah-hover'));
+        r.addEventListener('click', () => onAyahClick(it.surah, it.ayah, ln));
+        osvg.appendChild(r);
+
+        offsetX += w + (vbW * 0.008);
+      }
+    }
+
+    document.getElementById('log').textContent = `تم تحميل ${items.length} آية - اضغط على أي آية…`;
+    
+  } catch (error) {
+    console.error('خطأ في تحميل الصفحة:', error);
+    document.getElementById('log').textContent = `خطأ: ${error.message}`;
+  }
+}
+
+function onAyahClick(surah, ayah, line) {
+  document.getElementById('log').textContent = `ضغطت: ${surah}:${ayah} (سطر ${line})`;
+}
+
+// أحداث الأزرار
+document.getElementById('goBtn').addEventListener('click', () => {
+  const pageNum = parseInt(document.getElementById('pageInput').value);
+  loadPage(pageNum);
+});
+
+document.getElementById('prevBtn').addEventListener('click', () => {
+  if (currentPage > 1) loadPage(currentPage - 1);
+});
+
+document.getElementById('nextBtn').addEventListener('click', () => {
+  if (currentPage < 604) loadPage(currentPage + 1);
+});
+
+// الصفحات السريعة
+document.querySelectorAll('.quick-page').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const pageNum = parseInt(btn.dataset.page);
+    loadPage(pageNum);
+  });
+});
+
+// Enter في حقل الإدخال
+document.getElementById('pageInput').addEventListener('keypress', (e) => {
+  if (e.key === 'Enter') {
+    const pageNum = parseInt(document.getElementById('pageInput').value);
+    loadPage(pageNum);
+  }
+});
+
+// تحميل الصفحة الأولى
+loadPage(3);
+</script>
+</body>
+</html>
+

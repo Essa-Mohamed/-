@@ -464,8 +464,8 @@ def complaint(request):
 def test_catalog(request):
     tests=[
         {"key":"similar_count","title":" عدد مواضع المتشابهات","desc":"يعرض عبارة ويطلب عدد مواضعها الصحيحة في نطاقك.","available":True,"url":reverse("tests:similar_count:selection")},
-        {"key":"similar_on_pages","title":"مواضع المتشابهات في الصفحات","desc":"اختيار النطاق ثم تحديد الصفحات والمواضع لكل سؤال.","available":True,"url":reverse("tests:similar_on_pages:selection")},
-        {"key":"verse_location_quarters","title":"موقع الآية في الربع والصفحة","desc":"اختبار تحديد موقع الآية في الربع والصفحة مع نظام صعوبة يعتمد على طول الآية.","available":True,"url":reverse("tests:verse_location_quarters:selection")},
+        {"key":"similar_on_pages","title":"مواضع المتشابهات في الصفحات","desc":"اختيار النطاق ثم تحديد الصفحات والمواضع لكل سؤال.","available":False,"url":reverse("tests:similar_on_pages:selection")},
+        {"key":"verse_location_quarters","title":"موقع الآية في الربع والصفحة","desc":"اختبار تحديد موقع الآية في الربع والصفحة مع نظام صعوبة يعتمد على طول الآية.","available":False,"url":reverse("tests:verse_location_quarters:selection")},
         {"key":"page_edges_quarters","title":"بداية ونهاية الصفحات مع الأرباع","desc":"استنتاج بدايات/نهايات الآيات بين الصفحات داخل نطاقك.","available":False},
         {"key":"order_juz_quarters","title":"اختبار ترتيب الأجزاء والأرباع","desc":"أسئلة لقياس ترتيب الأجزاء والأرباع وتسلسلها.","available":False},
         {"key":"semantic_similarities","title":"متشابهات معاني الآيات","desc":"أسئلة على التشابه الدلالي للمعاني.","available":False}

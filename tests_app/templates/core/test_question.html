@@ -116,6 +116,23 @@
 .q-form{display:grid;gap:16px}
 .q-options{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;border:0;padding:0;margin:0}
 @media (max-width:720px){.q-options{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:480px){
+  .q-wrapper{padding:12px;margin:12px auto}
+  .q-card{padding:14px 16px}
+  .q-phrase{font-size:clamp(16px,4vw,20px);line-height:1.8}
+  .q-pill{height:48px;font-size:16px}
+  .q-modal-card{width:95vw;padding:16px}
+  .q-modal-actions{flex-direction:column;gap:8px}
+  .q-modal-actions .btn{width:100%;justify-content:center}
+}
+@media (max-width:320px){
+  .q-wrapper{padding:8px;margin:8px auto}
+  .q-card{padding:12px 14px}
+  .q-phrase{font-size:clamp(14px,4.5vw,18px);line-height:1.7}
+  .q-pill{height:44px;font-size:15px}
+  .q-counter{font-size:13px;padding:6px 12px}
+  .q-test-type{font-size:12px}
+}
 .q-option{position:relative;display:block;cursor:pointer}
 .q-option input{position:absolute;inset:0;opacity:0;pointer-events:none}
 .q-pill{display:grid;place-items:center;height:56px;border-radius:14px;background:#0f1118;border:1px solid rgba(212,175,55,.25);font-size:18px;font-weight:800;letter-spacing:.2px;transition:all .3s ease;position:relative;overflow:hidden}

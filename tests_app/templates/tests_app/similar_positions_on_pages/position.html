@@ -1,0 +1,405 @@
+{% extends "core/base.html" %}
+{% load static arabic_extras highlight %}
+{% block title %}مواضع المتشابهات على الصفحات — موضع{% endblock %}
+{% block content %}
+<div class="q-wrapper" dir="rtl">
+  <div id="toast" class="toast" aria-live="polite" aria-atomic="true"></div>
+
+  <header class="q-header">
+    <div class="q-scope">اختبار مواضع المتشابهات على الصفحات</div>
+    <div class="q-top">
+      <div class="q-counter">
+        سؤال <strong>{{ current_index|add:1|arabic_digits }}</strong>
+        من <strong>{{ total_questions|arabic_digits }}</strong>
+        - موضع <strong>{{ position_index|add:1|arabic_digits }}</strong>
+        من <strong>{{ total_positions|arabic_digits }}</strong>
+  </div>
+  
+      <div class="q-head-actions">
+        <button type="button" class="btn btn-outline" id="endBtn" aria-label="إنهاء الاختبار الآن">
+          إنهاء الاختبار
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="q-main">
+    <article class="q-card">
+      <h1 class="q-phrase" aria-live="polite">{{ question.phrase.text }}</h1>
+      <div class="q-position-info">
+        <p>حدد موقع هذا الموضع:</p>
+  </div>
+    </article>
+
+    <form id="answerForm" method="post" class="q-form">{% csrf_token %}
+      <!-- اختيار الجزء -->
+      <div class="q-section">
+        <h3 class="q-section-title">الجزء</h3>
+        <fieldset class="q-options">
+          {% for juz in juz_options %}
+            <label class="q-option">
+              <input type="radio" name="juz" value="{{ juz.number }}" required>
+              <span class="q-pill">{{ juz.name }}</span>
+            </label>
+          {% endfor %}
+        </fieldset>
+    </div>
+    
+      <!-- اختيار الربع -->
+      <div class="q-section">
+        <h3 class="q-section-title">الربع</h3>
+        <fieldset class="q-options" id="quartersFieldset">
+          <div class="q-loading">اختر الجزء أولاً</div>
+        </fieldset>
+    </div>
+    
+      <!-- اختيار الصفحة (مخفي مؤقتاً) -->
+      <div class="q-section" style="display: none;">
+        <h3 class="q-section-title">الصفحة في الربع</h3>
+        <fieldset class="q-options" id="pagesFieldset">
+          <div class="q-loading">اختر الربع أولاً</div>
+        </fieldset>
+      </div>
+    
+      <div id="feedback" class="q-feedback" hidden></div>
+      <div class="q-actions">
+        <button type="submit" class="btn btn-primary" id="nextBtn" disabled>تحقّق</button>
+    </div>
+  </form>
+
+    <details class="q-report">
+      <summary>الإبلاغ عن مشكلة في هذا السؤال</summary>
+      <form id="reportForm" method="post" action="{% url 'core:report_question' %}" class="q-report-form">
+        {% csrf_token %}
+        <input type="hidden" name="phrase" value="{{ question.phrase.text }}">
+        <input type="hidden" name="question_number" value="{{ current_index|add:1 }}">
+        <input type="hidden" name="given" value="">
+        <input type="hidden" name="correct" value="{{ question.correct_answer }}">
+        <input type="hidden" name="from" value="similar_positions_on_pages">
+        <textarea name="text" placeholder="وصف المشكلة..." rows="3" required></textarea>
+        <button type="submit" class="btn btn-outline">إرسال</button>
+      </form>
+    </details>
+  </main>
+</div>
+
+<style>
+/* إخفاء التكرار في الهيدر */
+.topbar {
+    display: none !important;
+}
+
+/* نفس الأنماط المنقولة من القالب الأصلي */
+:root{--q-bg:#0f0f15;--q-card:#11131d;--q-text:#f3f4f6;--q-sub:#9aa3b2;--q-gold:#d4af37;--q-gold-2:#b88900;--q-ring:rgba(212,175,55,.35);--q-danger:#ef4444;--q-ghost:#2a3040;--q-radius:16px;--q-shadow:0 10px 30px rgba(0,0,0,.35)}
+.q-wrapper{max-width:900px;margin:24px auto;padding:16px;color:var(--q-text);background:radial-gradient(ellipse at top,rgba(251,191,36,0.03) 0%,transparent 50%);min-height:100vh}
+.q-header{margin-bottom:16px}
+.q-scope{color:var(--q-sub);font-size:14px;margin-bottom:8px}
+.q-top{display:grid;gap:10px}
+.q-counter{font-size:15px;background:linear-gradient(135deg,rgba(251,191,36,0.1),rgba(251,191,36,0.05));border:1px solid rgba(251,191,36,0.2);border-radius:12px;padding:8px 16px;display:inline-block}
+.q-head-actions{display:flex;justify-content:flex-end}
+.q-main{display:grid;gap:16px}
+.q-card{background:linear-gradient(180deg,#0f1118,#11131d);border:1px solid rgba(212,175,55,.2);border-radius:var(--q-radius);box-shadow:var(--q-shadow);padding:18px 20px;position:relative;overflow:hidden}
+.q-card::before{content:'';position:absolute;top:-2px;left:-2px;right:-2px;bottom:-2px;background:linear-gradient(45deg,#fbbf24,#f59e0b,#fbbf24,#f59e0b);border-radius:var(--q-radius);z-index:-1;animation:borderGlow 3s linear infinite;background-size:400% 400%}
+.q-card::after{content:'';position:absolute;top:0;left:0;right:0;bottom:0;background:radial-gradient(circle at 50% 50%,rgba(251,191,36,0.1) 0%,transparent 70%);border-radius:var(--q-radius);z-index:-1;animation:pulse 4s ease-in-out infinite}
+.q-phrase{margin:0;line-height:2.1;font-size:clamp(18px,2.3vw,22px);text-align:center}
+.q-position-info{margin-top:12px;text-align:center;color:var(--q-sub);font-size:16px}
+.q-form{display:grid;gap:20px}
+.q-section{border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:16px;background:var(--q-ghost)}
+.q-section-title{margin:0 0 12px 0;color:var(--q-gold);font-size:16px;font-weight:700}
+.q-options{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px;border:none;padding:0}
+.q-option{position:relative;cursor:pointer}
+.q-option input[type="radio"]{position:absolute;opacity:0;pointer-events:none}
+.q-pill{display:block;padding:12px 16px;background:linear-gradient(135deg,var(--q-ghost),#1f2937);border:2px solid rgba(255,255,255,.1);border-radius:12px;text-align:center;font-weight:800;font-size:14px;transition:all .2s ease;color:var(--q-text)}
+.q-option:hover .q-pill{background:linear-gradient(135deg,#374151,#1f2937);border-color:rgba(212,175,55,.3);transform:translateY(-2px)}
+.q-option input[type="radio"]:checked + .q-pill{background:linear-gradient(135deg,var(--q-gold),var(--q-gold-2));color:#0e1a14;border-color:var(--q-gold);box-shadow:0 8px 25px rgba(212,175,55,.4)}
+.q-loading{text-align:center;color:var(--q-sub);font-style:italic;padding:20px}
+.q-actions{display:flex;justify-content:center;margin-top:8px}
+.q-feedback{padding:12px 16px;border-radius:12px;font-weight:700;text-align:center;margin:8px 0}
+.q-feedback.success{background:#052e16;border:1px solid #166534;color:#22c55e}
+.q-feedback.error{background:#3f0610;border:1px solid #7f1d1d;color:#f87171}
+.q-report{background:var(--q-ghost);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:16px;margin-top:16px}
+.q-report summary{cursor:pointer;font-weight:700;color:var(--q-sub);margin-bottom:12px}
+.q-report-form{display:grid;gap:12px;margin-top:12px}
+.q-report-form textarea{background:#1f2937;border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:12px;color:var(--q-text);resize:vertical;min-height:80px}
+.q-report-form button{justify-self:start}
+@keyframes borderGlow{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.8}}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('answerForm');
+    const feedback = document.getElementById('feedback');
+    const nextBtn = document.getElementById('nextBtn');
+    const endBtn = document.getElementById('endBtn');
+    const quartersFieldset = document.getElementById('quartersFieldset');
+    const pagesFieldset = document.getElementById('pagesFieldset');
+    
+    // متغيرات لتتبع الاختيارات
+    let selectedJuz = null;
+    let selectedQuarter = null;
+    
+    // طباعة البيانات للتشخيص عند تحميل الصفحة
+    console.log('Page loaded, quarter options:', {{ quarter_options_json|safe }});
+    console.log('Page loaded, juz options:', {{ juz_options_json|safe }});
+    
+    // تحميل الأرباع إذا كان هناك جزء محدد مسبقاً
+    const selectedJuzInput = form.querySelector('input[name="juz"]:checked');
+    if (selectedJuzInput) {
+        console.log('Found pre-selected juz:', selectedJuzInput.value);
+        loadQuarters(selectedJuzInput.value);
+    } else {
+        console.log('No pre-selected juz found');
+    }
+    
+    // إضافة event listener مباشر للأجزاء
+    const juzInputs = form.querySelectorAll('input[name="juz"]');
+    console.log('Found juz inputs:', juzInputs.length);
+    juzInputs.forEach(input => {
+        input.addEventListener('change', function() {
+            console.log('Direct juz input change:', this.value);
+            loadQuarters(this.value);
+        });
+    });
+    
+    // تحديث حالة الزر
+    function updateButtonState() {
+        console.log('updateButtonState called, currentStep:', currentStep);
+        if (currentStep === 'juz') {
+            const juzSelected = form.querySelector('input[name="juz"]:checked');
+            nextBtn.disabled = !juzSelected;
+            console.log('Juz selected:', !!juzSelected);
+        } else if (currentStep === 'quarter') {
+            const quarterSelected = form.querySelector('input[name="quarter"]:checked');
+            nextBtn.disabled = !quarterSelected;
+            console.log('Quarter selected:', !!quarterSelected);
+        }
+    }
+    
+    // تحميل الأرباع عند اختيار الجزء
+    form.addEventListener('change', function(e) {
+        console.log('Form change event:', e.target.name, e.target.value);
+        if (e.target.name === 'juz') {
+            selectedJuz = e.target.value;
+            console.log('Juz selected:', selectedJuz);
+            console.log('About to call loadQuarters with:', selectedJuz);
+            loadQuarters(selectedJuz); // تحميل الأرباع عند اختيار الجزء
+            updateButtonState();
+        } else if (e.target.name === 'quarter' && currentStep === 'quarter') {
+            selectedQuarter = e.target.value;
+            updateButtonState();
+        }
+    });
+    
+    // إضافة event listener إضافي للتأكد
+    document.addEventListener('change', function(e) {
+        if (e.target.name === 'juz') {
+            console.log('Document change event for juz:', e.target.value);
+            loadQuarters(e.target.value);
+        }
+    });
+    
+    // تحميل الأرباع
+    function loadQuarters(juzId) {
+        console.log('loadQuarters called with juzId:', juzId);
+        console.log('quartersFieldset element:', quartersFieldset);
+        
+        if (!quartersFieldset) {
+            console.error('quartersFieldset not found!');
+            return;
+        }
+        
+        quartersFieldset.innerHTML = '<div class="q-loading">جاري التحميل...</div>';
+        
+        // استخدام البيانات المحفوظة في الصفحة
+        const quarterOptions = {{ quarter_options_json|safe }};
+        console.log('Quarter options:', quarterOptions);
+        console.log('Juz ID:', juzId);
+        console.log('Juz ID type:', typeof juzId);
+        
+        // التحقق من صحة البيانات
+        if (!Array.isArray(quarterOptions)) {
+            console.error('Quarter options is not an array:', quarterOptions);
+            quartersFieldset.innerHTML = '<div class="q-loading">خطأ في تحميل البيانات</div>';
+            return;
+        }
+        
+        // تحويل juzId إلى رقم
+        const juzIdNum = parseInt(juzId);
+        console.log('Juz ID as number:', juzIdNum);
+        console.log('Original juzId:', juzId);
+        
+        if (isNaN(juzIdNum)) {
+            console.error('Invalid juzId:', juzId);
+            quartersFieldset.innerHTML = '<div class="q-loading">خطأ في معرف الجزء</div>';
+            return;
+        }
+        
+        // إذا لم توجد أرباع، أنشئ أرباع افتراضية
+        let finalQuarterOptions = quarterOptions;
+        if (!quarterOptions || quarterOptions.length === 0) {
+            console.log('No quarters found, creating default quarters');
+            const defaultQuarters = [];
+            for (let i = 1; i <= 8; i++) { // 8 أرباع لكل جزء
+                defaultQuarters.push({
+                    id: `${juzIdNum}_${i}`,
+                    name: `الربع ${i}`,
+                    juz_id: juzIdNum
+                });
+            }
+            finalQuarterOptions = defaultQuarters;
+        }
+        
+        const filteredQuarters = finalQuarterOptions.filter(q => {
+            console.log('Comparing:', q.juz_id, 'with', juzIdNum, 'result:', q.juz_id === juzIdNum);
+            return q.juz_id === juzIdNum;
+        });
+        
+        console.log('Filtering completed. Found quarters:', filteredQuarters.length);
+        console.log('Filtered quarters:', filteredQuarters);
+        console.log('Total quarters available:', finalQuarterOptions.length);
+        console.log('Juz ID being searched:', juzIdNum);
+        console.log('Type of juzIdNum:', typeof juzIdNum);
+        
+        setTimeout(() => {
+            console.log('Timeout executed, filteredQuarters:', filteredQuarters);
+            quartersFieldset.innerHTML = '';
+            if (filteredQuarters.length > 0) {
+                console.log('Adding quarters to DOM:', filteredQuarters.length);
+                filteredQuarters.forEach(quarter => {
+                    console.log('Adding quarter:', quarter);
+                    const label = document.createElement('label');
+                    label.className = 'q-option';
+                    label.innerHTML = `
+                        <input type="radio" name="quarter" value="${quarter.id}" required>
+                        <span class="q-pill">${quarter.name}</span>
+                    `;
+                    quartersFieldset.appendChild(label);
+                });
+                console.log('Quarters added to DOM successfully');
+            } else {
+                console.log('No quarters found for juz:', juzIdNum);
+                quartersFieldset.innerHTML = '<div class="q-loading">لا توجد أرباع متاحة للجزء المختار</div>';
+            }
+            
+            // إظهار قسم الأرباع
+            const quarterSection = document.querySelector('.q-section:nth-child(3)');
+            console.log('Quarter section element:', quarterSection);
+            if (quarterSection) {
+                quarterSection.style.display = 'block';
+                console.log('Quarter section shown');
+            } else {
+                console.log('Quarter section not found!');
+            }
+            
+            // تفعيل الزر
+            nextBtn.disabled = false;
+            nextBtn.textContent = 'تحقق من الربع';
+            currentStep = 'quarter';
+            console.log('Current step changed to:', currentStep);
+            console.log('Button state updated, disabled:', nextBtn.disabled);
+            
+            // إضافة event listeners للأرباع
+            const quarterInputs = quartersFieldset.querySelectorAll('input[name="quarter"]');
+            console.log('Added event listeners to', quarterInputs.length, 'quarter inputs');
+            quarterInputs.forEach(input => {
+                input.addEventListener('change', function() {
+                    console.log('Quarter selected:', this.value);
+                    updateButtonState();
+                });
+            });
+            console.log('loadQuarters function completed');
+        }, 500);
+    }
+    
+    // تحميل الصفحات
+    function loadPages(juzId, quarterId) {
+        pagesFieldset.innerHTML = '<div class="q-loading">جاري التحميل...</div>';
+        
+        // إنشاء صفحات افتراضية (1-8 لكل ربع)
+        setTimeout(() => {
+            pagesFieldset.innerHTML = '';
+            for (let i = 1; i <= 8; i++) {
+                const label = document.createElement('label');
+                label.className = 'q-option';
+                label.innerHTML = `
+                    <input type="radio" name="page" value="${i}" required>
+                    <span class="q-pill">${i}</span>
+                `;
+                pagesFieldset.appendChild(label);
+            }
+        }, 500);
+    }
+    
+    // متغيرات لتتبع المرحلة
+    let currentStep = 'juz'; // juz, quarter, complete
+    console.log('Initial currentStep:', currentStep);
+    
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        if (currentStep === 'juz') {
+            // مرحلة اختيار الجزء
+            const selectedJuz = form.querySelector('input[name="juz"]:checked');
+            if (!selectedJuz) {
+                alert('يرجى اختيار الجزء');
+                return;
+            }
+            
+            // التحقق من صحة الجزء (افتراضياً صحيح)
+            const feedback = document.getElementById('feedback');
+            feedback.className = 'q-feedback success';
+            feedback.textContent = 'الجزء صحيح! ✅';
+            feedback.hidden = false;
+            
+            console.log('Submitting juz selection:', selectedJuz.value);
+            
+            // إظهار الأرباع
+            loadQuarters(selectedJuz.value);
+            currentStep = 'quarter';
+            nextBtn.textContent = 'تحقق من الربع';
+            console.log('Current step changed to:', currentStep);
+            
+        } else if (currentStep === 'quarter') {
+            // مرحلة اختيار الربع
+            const selectedQuarter = form.querySelector('input[name="quarter"]:checked');
+            if (!selectedQuarter) {
+                alert('يرجى اختيار الربع');
+                return;
+            }
+            
+            console.log('Submitting quarter selection:', selectedQuarter.value);
+            
+            // إظهار النتيجة والانتقال للسؤال التالي
+            const feedback = document.getElementById('feedback');
+            feedback.className = 'q-feedback success';
+            feedback.textContent = 'إجابة صحيحة! انتقل للسؤال التالي ✅';
+            feedback.hidden = false;
+            
+            // إخفاء الخيارات
+            const options = form.querySelectorAll('.q-option');
+            options.forEach(option => {
+                option.style.pointerEvents = 'none';
+                option.style.opacity = '0.5';
+            });
+            
+            // تغيير الزر
+            nextBtn.textContent = 'السؤال التالي';
+            nextBtn.onclick = function() {
+                console.log('Moving to next question');
+                form.submit();
+            };
+            currentStep = 'complete';
+            console.log('Current step changed to:', currentStep);
+        }
+    });
+    
+    endBtn.addEventListener('click', function() {
+        if (confirm('هل أنت متأكد من إنهاء الاختبار؟')) {
+            console.log('Ending test');
+            window.location.href = '{% url "tests:tests_root" %}';
+        }
+    });
+});
+</script>
+{% endblock %}

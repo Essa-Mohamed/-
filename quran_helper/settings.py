@@ -32,16 +32,32 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    # "rest_framework",  # مؤقتاً
     "core",
     "tests_app",
     "mushaf_app",
+    "quran",
     "complaints_app",
-    "api_v1",
+    # "api_v1",  # مؤقتاً
     "stats_app",
-    "tests_app.similar_on_pages",
+    "tests_app.similar_positions_on_pages",
     "tests_app.verse_location_quarters",
 
     ]
+
+# =========================
+# Django REST Framework
+# =========================
+REST_FRAMEWORK = {
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "rest_framework.authentication.SessionAuthentication",
+    ],
+    "DEFAULT_PERMISSION_CLASSES": [
+        "rest_framework.permissions.IsAuthenticated",
+    ],
+    "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
+    "PAGE_SIZE": 20,
+}
 
 # =========================
 # Middleware
@@ -117,7 +133,13 @@ USE_TZ = True
 # =========================
 STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
-STATICFILES_DIRS = [BASE_DIR / "static"]
+STATICFILES_DIRS = [
+    BASE_DIR / "static",
+    # ضع مجلد النسخة القديمة أولاً لتتقدم ملفاته على أي ملفات فارغة في assets
+    BASE_DIR / "quran_helperold" / "assets",
+    BASE_DIR / "assets",
+    BASE_DIR / "elec_mushaf",
+]
 
 # إعدادات الملفات الثابتة
 STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.StaticFilesStorage'
@@ -150,6 +172,8 @@ CSRF_COOKIE_SECURE = not DEBUG
 
 CSRF_TRUSTED_ORIGINS = [
     "https://essa.pythonanywhere.com",
+    "http://localhost:8000",
+    "http://127.0.0.1:8000",
 ]
 
 SECURE_CONTENT_TYPE_NOSNIFF = True

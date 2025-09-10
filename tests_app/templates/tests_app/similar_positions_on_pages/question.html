@@ -1,0 +1,164 @@
+{% extends "core/base.html" %}
+{% load static arabic_extras highlight %}
+{% block title %}مواضع المتشابهات على الصفحات — سؤال{% endblock %}
+{% block content %}
+<div class="q-wrapper" dir="rtl">
+  <div id="toast" class="toast" aria-live="polite" aria-atomic="true"></div>
+
+  <header class="q-header">
+    <div class="q-scope">اختبار مواضع المتشابهات على الصفحات</div>
+    <div class="q-top">
+      <div class="q-counter">
+        سؤال <strong>{{ current_index|add:1|arabic_digits }}</strong>
+        من <strong>{{ total_questions|arabic_digits }}</strong>
+  </div>
+  
+      <div class="q-head-actions">
+        <button type="button" class="btn btn-outline" id="endBtn" aria-label="إنهاء الاختبار الآن">
+          إنهاء الاختبار
+        </button>
+  </div>
+  </div>
+  </header>
+
+  <main class="q-main">
+    <article class="q-card">
+      <h1 class="q-phrase" aria-live="polite">{{ question.phrase.text }}</h1>
+    </article>
+
+    <form id="answerForm" method="post" class="q-form">{% csrf_token %}
+      <fieldset class="q-options">
+        {% for opt in options %}
+          <label class="q-option">
+            <input type="radio" name="occurrence" value="{{ opt }}" required>
+            <span class="q-pill">{{ opt|arabic_digits }}</span>
+        </label>
+      {% endfor %}
+      </fieldset>
+
+      <div id="feedback" class="q-feedback" hidden></div>
+      <div class="q-actions">
+        <button type="submit" class="btn btn-primary" id="nextBtn">تحقّق</button>
+    </div>
+  </form>
+
+    <details class="q-report">
+      <summary>الإبلاغ عن مشكلة في هذا السؤال</summary>
+      <form id="reportForm" method="post" action="{% url 'core:report_question' %}" class="q-report-form">
+        {% csrf_token %}
+        <input type="hidden" name="phrase" value="{{ question.phrase.text }}">
+        <input type="hidden" name="question_number" value="{{ current_index|add:1 }}">
+        <input type="hidden" name="given" value="">
+        <input type="hidden" name="correct" value="{{ question.correct_answer }}">
+        <input type="hidden" name="from" value="similar_positions_on_pages">
+        <textarea name="text" placeholder="وصف المشكلة..." rows="3" required></textarea>
+        <button type="submit" class="btn btn-outline">إرسال</button>
+      </form>
+    </details>
+  </main>
+</div>
+
+<style>
+/* إخفاء التكرار في الهيدر */
+.topbar {
+    display: none !important;
+}
+
+/* نفس الأنماط المنقولة من القالب الأصلي */
+:root{--q-bg:#0f0f15;--q-card:#11131d;--q-text:#f3f4f6;--q-sub:#9aa3b2;--q-gold:#d4af37;--q-gold-2:#b88900;--q-ring:rgba(212,175,55,.35);--q-danger:#ef4444;--q-ghost:#2a3040;--q-radius:16px;--q-shadow:0 10px 30px rgba(0,0,0,.35)}
+.q-wrapper{max-width:900px;margin:24px auto;padding:16px;color:var(--q-text);background:radial-gradient(ellipse at top,rgba(251,191,36,0.03) 0%,transparent 50%);min-height:100vh}
+.q-header{margin-bottom:16px}
+.q-scope{color:var(--q-sub);font-size:14px;margin-bottom:8px}
+.q-top{display:grid;gap:10px}
+.q-counter{font-size:15px;background:linear-gradient(135deg,rgba(251,191,36,0.1),rgba(251,191,36,0.05));border:1px solid rgba(251,191,36,0.2);border-radius:12px;padding:8px 16px;display:inline-block}
+.q-head-actions{display:flex;justify-content:flex-end}
+.q-main{display:grid;gap:16px}
+.q-card{background:linear-gradient(180deg,#0f1118,#11131d);border:1px solid rgba(212,175,55,.2);border-radius:var(--q-radius);box-shadow:var(--q-shadow);padding:18px 20px;position:relative;overflow:hidden}
+.q-card::before{content:'';position:absolute;top:-2px;left:-2px;right:-2px;bottom:-2px;background:linear-gradient(45deg,#fbbf24,#f59e0b,#fbbf24,#f59e0b);border-radius:var(--q-radius);z-index:-1;animation:borderGlow 3s linear infinite;background-size:400% 400%}
+.q-card::after{content:'';position:absolute;top:0;left:0;right:0;bottom:0;background:radial-gradient(circle at 50% 50%,rgba(251,191,36,0.1) 0%,transparent 70%);border-radius:var(--q-radius);z-index:-1;animation:pulse 4s ease-in-out infinite}
+.q-phrase{margin:0;line-height:2.1;font-size:clamp(18px,2.3vw,22px);text-align:center}
+.q-form{display:grid;gap:16px}
+.q-options{display:grid;grid-template-columns:repeat(auto-fit,minmax(80px,1fr));gap:12px;border:none;padding:0}
+.q-option{position:relative;cursor:pointer}
+.q-option input[type="radio"]{position:absolute;opacity:0;pointer-events:none}
+.q-pill{display:block;padding:12px 16px;background:linear-gradient(135deg,var(--q-ghost),#1f2937);border:2px solid rgba(255,255,255,.1);border-radius:12px;text-align:center;font-weight:800;font-size:16px;transition:all .2s ease;color:var(--q-text)}
+.q-option:hover .q-pill{background:linear-gradient(135deg,#374151,#1f2937);border-color:rgba(212,175,55,.3);transform:translateY(-2px)}
+.q-option input[type="radio"]:checked + .q-pill{background:linear-gradient(135deg,var(--q-gold),var(--q-gold-2));color:#0e1a14;border-color:var(--q-gold);box-shadow:0 8px 25px rgba(212,175,55,.4)}
+.q-actions{display:flex;justify-content:center;margin-top:8px}
+.q-feedback{padding:12px 16px;border-radius:12px;font-weight:700;text-align:center;margin:8px 0}
+.q-feedback.success{background:#052e16;border:1px solid #166534;color:#22c55e}
+.q-feedback.error{background:#3f0610;border:1px solid #7f1d1d;color:#f87171}
+.q-report{background:var(--q-ghost);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:16px;margin-top:16px}
+.q-report summary{cursor:pointer;font-weight:700;color:var(--q-sub);margin-bottom:12px}
+.q-report-form{display:grid;gap:12px;margin-top:12px}
+.q-report-form textarea{background:#1f2937;border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:12px;color:var(--q-text);resize:vertical;min-height:80px}
+.q-report-form button{justify-self:start}
+@keyframes borderGlow{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.8}}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('answerForm');
+    const feedback = document.getElementById('feedback');
+    const nextBtn = document.getElementById('nextBtn');
+    const endBtn = document.getElementById('endBtn');
+    
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const selectedOption = form.querySelector('input[name="occurrence"]:checked');
+        if (!selectedOption) {
+            alert('يرجى اختيار عدد المواضع');
+            return;
+        }
+        
+        const selectedValue = parseInt(selectedOption.value);
+        const correctAnswer = {{ question.correct_answer }};
+        
+        // إظهار النتيجة
+        if (selectedValue === correctAnswer) {
+            feedback.className = 'q-feedback success';
+            feedback.textContent = 'إجابة صحيحة! 🎉';
+            feedback.hidden = false;
+            
+            // إخفاء الخيارات
+            const options = form.querySelectorAll('.q-option');
+  options.forEach(option => {
+                option.style.pointerEvents = 'none';
+                option.style.opacity = '0.5';
+            });
+            
+            // تغيير الزر
+            nextBtn.textContent = 'انتقل للمواضع';
+            nextBtn.onclick = function() {
+                form.submit();
+            };
+        } else {
+            feedback.className = 'q-feedback error';
+            feedback.textContent = `إجابة خاطئة. الإجابة الصحيحة هي ${correctAnswer}`;
+            feedback.hidden = false;
+            
+            // إخفاء الخيارات
+            const options = form.querySelectorAll('.q-option');
+            options.forEach(option => {
+                option.style.pointerEvents = 'none';
+                option.style.opacity = '0.5';
+            });
+            
+            // تغيير الزر
+            nextBtn.textContent = 'السؤال التالي';
+            nextBtn.onclick = function() {
+          form.submit();
+            };
+      }
+    });
+    
+    endBtn.addEventListener('click', function() {
+        if (confirm('هل أنت متأكد من إنهاء الاختبار؟')) {
+            window.location.href = '{% url "tests:tests_root" %}';
+        }
+  });
+});
+</script>
+{% endblock %}

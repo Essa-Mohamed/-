@@ -447,6 +447,86 @@ body{
     width: 36px;
     height: 36px;
   }
+  
+  .container {
+    padding: 0.75rem;
+  }
+  
+  .brand-text .brand-name-ar {
+    font-size: 1rem;
+  }
+  
+  .brand-text .brand-name-en {
+    font-size: 0.8rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .container {
+    padding: 0.5rem;
+  }
+  
+  .nav-welcome {
+    font-size: 0.8rem;
+    padding: 0.2rem 0.4rem;
+  }
+  
+  .avatar {
+    width: 32px;
+    height: 32px;
+  }
+  
+  .brand-logo {
+    width: 36px;
+    height: 36px;
+  }
+  
+  .brand-text .brand-name-ar {
+    font-size: 0.9rem;
+  }
+  
+  .brand-text .brand-name-en {
+    font-size: 0.75rem;
+  }
+  
+  .btn {
+    padding: 0.5rem 0.8rem;
+    font-size: 0.9rem;
+  }
+}
+
+@media (max-width: 320px) {
+  .container {
+    padding: 0.4rem;
+  }
+  
+  .nav-welcome {
+    font-size: 0.75rem;
+    padding: 0.15rem 0.3rem;
+  }
+  
+  .avatar {
+    width: 28px;
+    height: 28px;
+  }
+  
+  .brand-logo {
+    width: 32px;
+    height: 32px;
+  }
+  
+  .brand-text .brand-name-ar {
+    font-size: 0.85rem;
+  }
+  
+  .brand-text .brand-name-en {
+    font-size: 0.7rem;
+  }
+  
+  .btn {
+    padding: 0.4rem 0.6rem;
+    font-size: 0.85rem;
+  }
 }
 
 /* ===== CSS Version Stamp ===== */

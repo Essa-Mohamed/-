@@ -9,7 +9,7 @@ urlpatterns = [
 
     # أنواع الاختبارات المختلفة
     path("similar-count/", include(("tests_app.similar_count.urls", "similar_count"), namespace="similar_count")),
-    path("similar-on-pages/", include(("tests_app.similar_on_pages.urls", "similar_on_pages"), namespace="similar_on_pages")),
+    path("similar-on-pages/", include(("tests_app.similar_positions_on_pages.urls", "similar_positions_on_pages"), namespace="similar_positions_on_pages")),
     path("verse-location-quarters/", include(("tests_app.verse_location_quarters.urls", "verse_location_quarters"), namespace="verse_location_quarters")),
 ]
 

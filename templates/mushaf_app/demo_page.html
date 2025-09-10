@@ -1,0 +1,205 @@
+{% extends "core/base.html" %}
+{% load static %}
+
+{% block title %}صفحة المصحف {{ pno }}{% endblock %}
+
+{% block content %}
+<style>
+  .mushaf-wrap{display:grid; gap:1rem}
+  .mushaf-page{position:relative; margin:0 auto; width:min(1200px, 98vw); background:#ffffff; border:1px solid #ddd; border-radius:8px; overflow:hidden}
+  .mushaf-bg{display:block; width:100%; height:auto; border:0}
+  .overlay{position:absolute; inset:0; pointer-events:none}
+  /* تحميل خط حفص الذكي */
+  @font-face {
+    font-family: 'HafsSmart';
+    src: url('{% static 'elec_mushaf/kfgqpc_hafs_smart_font/HafsSmart_08.ttf' %}') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+  }
+  .ayah-rect { 
+    pointer-events: auto; 
+    cursor: pointer; 
+    transition: fill 0.2s ease;
+  }
+  .ayah-rect:hover { 
+    fill: rgba(212,175,55,0.3) !important; 
+  }
+  .info{background:#fff; border:1px solid #e5e7eb; border-radius:10px; padding:0.8rem}
+  .info h3{margin:.2rem 0 .6rem}
+  .pager{display:flex; gap:.5rem; justify-content:center; align-items:center}
+  .pager input{width:100px; text-align:center}
+</style>
+
+<div class="container" style="padding:1rem">
+  <h2>صفحة المصحف رقم {{ pno }}</h2>
+
+  <div class="mushaf-wrap">
+    <div class="mushaf-page">
+      <picture>
+        <source srcset="{% static 'mushaf/svg/' %}{{ bg_filename_padded }}" />
+        <img src="{% static 'mushaf/svg/' %}{{ bg_filename_plain }}" alt="صفحة {{ pno }}" class="mushaf-bg" />
+      </picture>
+      <svg class="overlay" id="overlaySvg"></svg>
+    </div>
+
+    <form class="pager" method="get" action="/mushaf/demo/">
+      <label>اذهب إلى صفحة:</label>
+      <input type="number" name="p" min="1" max="604" value="{{ pno }}" />
+      <button formaction="/mushaf/demo/{{ pno|add:-1 }}/" {% if pno|add:0 <= 1 %}disabled{% endif %}>السابق</button>
+      <button formaction="/mushaf/demo/{{ pno|add:1 }}/">التالي</button>
+    </form>
+
+    <div class="info" id="infoPanel">
+      <h3>تفاصيل الآية</h3>
+      <div id="infoBody" class="text-muted">انقر على آية لعرض التفاصيل.</div>
+    </div>
+  </div>
+</div>
+
+<script>
+(async function() {
+  const panel = document.getElementById('infoPanel');
+  const body = document.getElementById('infoBody');
+  const pageEl = document.querySelector('.mushaf-page');
+  const overlay = document.getElementById('overlaySvg');
+  
+  if(!overlay || !pageEl) return;
+
+  // بيانات الآيات من السيرفر
+  const ayahs = [
+    {% for a in ayahs %}
+    {
+      sura_ar: "{{ a.sura_name_ar|escapejs }}",
+      sura_no: {{ a.sura_no }},
+      aya_no: {{ a.aya_no }},
+      page: {{ a.page }},
+      jozz: {{ a.jozz }},
+      line: {{ a.line_start }},
+      text_emlaey: "{{ a.aya_text_emlaey|escapejs }}"
+    }{% if not forloop.last %},{% endif %}
+    {% endfor %}
+  ];
+
+  console.log('Ayahs loaded:', ayahs.length);
+
+  // 1) ضبط viewBox للصفحة (نفس أبعاد الصورة الأصلية)
+  const viewBox = "0 0 1200 1800"; // أبعاد صفحة المصحف النموذجية
+  const [minX, minY, vbW, vbH] = viewBox.split(/\s+/).map(Number);
+  
+  overlay.innerHTML = `<svg viewBox="${viewBox}" preserveAspectRatio="xMidYMid meet"></svg>`;
+  const osvg = overlay.querySelector('svg');
+
+  // 2) إعداد Canvas للقياس الدقيق
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+  const FONT_PX = vbW * 0.018; // حجم الخط كنسبة من عرض viewBox
+  ctx.font = `${FONT_PX}px HafsSmart, Arial, sans-serif`;
+  ctx.direction = 'rtl';
+
+  // 3) ثوابت هندسية للصفحة
+  const LINES = 15;
+  const topPad = vbH * 0.065;
+  const bottomPad = vbH * 0.06;
+  const usableH = vbH - topPad - bottomPad;
+  const lineY = (ln) => minY + topPad + ((ln - 0.5) * usableH / LINES);
+  const rightMargin = minX + vbW * 0.06;  // بداية السطر من اليمين
+  const leftLimit = minX + vbW * 0.94;    // نهاية السطر من اليسار
+
+  // 4) Cache للقياسات
+  const cache = {};
+
+  // 5) رسم صناديق الآيات
+  for (const it of ayahs) {
+    const key = `${it.sura_no}:${it.aya_no}`;
+    
+    if (!cache[key]) {
+      // تنظيف النص وقياس العرض
+      const text = (it.text_emlaey || '').replace(/\s+/g, ' ').trim();
+      const metrics = ctx.measureText(text);
+      const w = metrics.width;
+      cache[key] = { w, text };
+    }
+
+    const y = lineY(it.line);
+    const w = Math.min(cache[key].w, (leftLimit - rightMargin));
+    const h = vbH * 0.045; // ارتفاع الصندوق
+    const x = rightMargin; // محاذاة لليمين (RTL)
+    const rx = 6;
+
+    // إنشاء المستطيل
+    const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    const rc = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    
+    rc.setAttribute('x', x);
+    rc.setAttribute('y', y - h/2);
+    rc.setAttribute('width', w);
+    rc.setAttribute('height', h);
+    rc.setAttribute('rx', rx);
+    rc.setAttribute('ry', rx);
+    rc.setAttribute('fill', 'rgba(212,175,55,0.12)');
+    rc.setAttribute('stroke', 'rgba(212,175,55,0.6)');
+    rc.setAttribute('stroke-width', '1');
+    rc.setAttribute('data-ayah', key);
+    rc.style.cursor = 'pointer';
+    rc.style.transition = 'all 0.2s ease';
+
+    // إضافة نص رقم الآية
+    const textEl = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    textEl.setAttribute('x', x + w/2);
+    textEl.setAttribute('y', y);
+    textEl.setAttribute('text-anchor', 'middle');
+    textEl.setAttribute('dominant-baseline', 'middle');
+    textEl.setAttribute('font-size', FONT_PX * 0.6);
+    textEl.setAttribute('fill', '#8B4513');
+    textEl.setAttribute('font-weight', 'bold');
+    textEl.textContent = it.aya_no;
+
+    // أحداث التفاعل
+    rc.addEventListener('mouseenter', () => {
+      rc.setAttribute('fill', 'rgba(212,175,55,0.25)');
+      rc.setAttribute('stroke', 'rgba(212,175,55,0.8)');
+    });
+    
+    rc.addEventListener('mouseleave', () => {
+      rc.setAttribute('fill', 'rgba(212,175,55,0.12)');
+      rc.setAttribute('stroke', 'rgba(212,175,55,0.6)');
+    });
+    
+    rc.addEventListener('click', () => {
+      body.innerHTML = `
+        <div><strong>السورة:</strong> ${it.sura_ar} (${it.sura_no})</div>
+        <div><strong>الآية:</strong> ${it.aya_no}</div>
+        <div><strong>الصفحة:</strong> ${it.page} — <strong>الجزء:</strong> ${it.jozz}</div>
+        <div><strong>السطر:</strong> ${it.line}</div>
+        <div dir="rtl" style="margin-top:.5rem"><strong>النص:</strong> ${it.text_emlaey}</div>
+      `;
+      panel.scrollIntoView({behavior:'smooth', block:'nearest'});
+    });
+
+    g.appendChild(rc);
+    g.appendChild(textEl);
+    osvg.appendChild(g);
+  }
+
+  console.log(`Drew ${ayahs.length} precise ayah boxes`);
+
+  // 6) إعادة الضبط عند تغيير الحجم (viewBox يحافظ على النسب)
+  window.addEventListener('resize', debounce(() => {
+    // إعادة رسم بسيطة - viewBox يحافظ على النسب
+    console.log('Resizing overlay...');
+  }, 200));
+
+  function debounce(fn, ms) {
+    let t;
+    return function() {
+      clearTimeout(t);
+      t = setTimeout(fn, ms);
+    };
+  }
+})();
+</script>
+
+{% endblock %}
+
+

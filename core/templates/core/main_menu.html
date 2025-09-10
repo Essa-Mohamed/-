@@ -68,6 +68,86 @@
   
   .grid-cards-two{display:grid; grid-template-columns:repeat(2,1fr); gap:1.1rem; margin-top:1.5rem}
   @media (max-width: 900px){ .grid-cards-two{grid-template-columns:1fr} }
+  
+  @media (max-width: 480px) {
+    .home-shell {
+      gap: 1rem;
+    }
+    
+    .welcome {
+      padding: 1.4rem 1.2rem 1rem;
+    }
+    
+    .welcome h1 {
+      font-size: clamp(20px, 4vw, 24px);
+    }
+    
+    .welcome .lead {
+      font-size: 0.95rem;
+    }
+    
+    .cardx {
+      padding: 1.2rem 1.1rem;
+    }
+    
+    .cardx h3 {
+      font-size: 1rem;
+    }
+    
+    .cardx p {
+      font-size: 0.9rem;
+    }
+    
+    .btn-lg {
+      padding: 0.8rem 1.1rem;
+      font-size: 0.9rem;
+    }
+    
+    .stats-grid {
+      grid-template-columns: 1fr;
+      gap: 0.6rem;
+    }
+    
+    .stat {
+      padding: 0.6rem 0.7rem;
+    }
+  }
+  
+  @media (max-width: 320px) {
+    .welcome {
+      padding: 1.2rem 1rem 0.8rem;
+    }
+    
+    .welcome h1 {
+      font-size: clamp(18px, 4.5vw, 22px);
+    }
+    
+    .welcome .lead {
+      font-size: 0.9rem;
+    }
+    
+    .cardx {
+      padding: 1rem 0.9rem;
+    }
+    
+    .cardx h3 {
+      font-size: 0.95rem;
+    }
+    
+    .cardx p {
+      font-size: 0.85rem;
+    }
+    
+    .btn-lg {
+      padding: 0.7rem 1rem;
+      font-size: 0.85rem;
+    }
+    
+    .chip {
+      padding: 0.4rem 0.6rem;
+      font-size: 0.9rem;
+    }
+  }
   .cardx{
     position:relative;
     background:linear-gradient(135deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
@@ -371,7 +451,7 @@
       <!-- تم تغيير الوجهة إلى كتالوج الاختبارات -->
       <a href="/tests/" class="btn btn-primary btn-lg btn-animate animate-delay-5">بدء اختبار جديد</a>
       {% if request.session.questions %}
-        <a href="{% url 'core:test_question' %}" class="btn btn-outline btn-lg btn-animate animate-delay-6">استكمال الاختبار الحالي</a>
+        <a href="{% url 'tests:tests_root' %}" class="btn btn-outline btn-lg btn-animate animate-delay-6">استكمال الاختبار الحالي</a>
       {% endif %}
       <a href="{% url 'core:complaint' %}" class="btn btn-outline btn-lg btn-animate animate-delay-6">إبلاغ / اقتراح</a>
       
@@ -479,7 +559,7 @@
       <a href="{% url 'core:account_settings' %}" class="btn btn-primary">تعديل معلومات الحساب</a>
       <a href="{% url 'core:logout' %}" class="btn btn-outline">تسجيل الخروج</a>
       {% if request.session.questions %}
-        <a href="{% url 'core:test_question' %}" class="btn btn-outline">متابعة الاختبار</a>
+        <a href="{% url 'tests:tests_root' %}" class="btn btn-outline">متابعة الاختبار</a>
       {% endif %}
     </div>
   </article>
@@ -610,3 +690,6 @@ window.addEventListener('load', addScrollAnimations);
 </script>
 
 {% endblock %}
+
+
+

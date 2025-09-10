@@ -1,0 +1,177 @@
+<!-- quran/templates/mushaf_page.html -->
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <title>صفحة {{ page }}</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link href="/static/css/mushaf.css" rel="stylesheet" />
+</head>
+<body>
+  <div class="page-wrap">
+    <div class="page-header">
+      <strong class="page-title">صفحة {{ page }}</strong>
+      <span id="log" class="page-log">اضغط على أي آية…</span>
+    </div>
+
+    <div class="mushaf-box">
+      <div id="svgHost" class="svg-host"></div>
+      <div id="overlayHost" class="overlay"></div>
+    </div>
+  </div>
+
+<script>
+(async function() {
+  const PAGE = {{ page }};
+  
+  // 1) حقن SVG الصفحة inline
+  const svgUrl = "/static/mushaf/svg/page" + String(PAGE).padStart(3, '0') + ".svg";
+  
+  try {
+    const svgText = await fetch(svgUrl).then(r => {
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      return r.text();
+    });
+    
+    const svgHost = document.getElementById('svgHost');
+    svgHost.innerHTML = svgText;
+    const svg = svgHost.querySelector('svg');
+    
+    if (!svg) { 
+      document.getElementById('log').textContent = "SVG غير موجود"; 
+      return; 
+    }
+
+    // تأكد من viewBox
+    if (!svg.getAttribute('viewBox')) {
+      const w = parseFloat(svg.getAttribute('width') || 1200);
+      const h = parseFloat(svg.getAttribute('height') || 1800);
+      svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
+    }
+    
+    const [minX, minY, vbW, vbH] = svg.getAttribute('viewBox').split(/\s+/).map(Number);
+
+    // 2) بيانات الآيات: السطر + نص إملائي
+    const meta = await fetch(`/quran/api/page/${PAGE}/meta/`).then(r => {
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      return r.json();
+    });
+    const items = meta.items;
+
+    // 3) طبقة فوقية بنفس viewBox
+    const overlayHost = document.getElementById('overlayHost');
+    overlayHost.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${minX} ${minY} ${vbW} ${vbH}" preserveAspectRatio="xMidYMid meet"></svg>`;
+    const osvg = overlayHost.querySelector('svg');
+
+    // 4) مُهيّئ القياس (Canvas 2D) بخط HafsSmart
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    const FONT = (vbW * 0.022); // حجم خط محسن
+    ctx.font = `${FONT}px HafsSmart`;
+    ctx.textAlign = 'right'; // مهم للنص العربي
+
+    // 5) هندسة الصفحة: 15 سطر
+    const LINES = 15;
+    const topPad = vbH * 0.08; // مسافة علوية محسنة
+    const bottomPad = vbH * 0.08; // مسافة سفلية محسنة
+    const usableH = vbH - topPad - bottomPad;
+    const lineY = (ln) => minY + topPad + ((ln - 0.5) * usableH / LINES);
+    const rightMargin = minX + vbW * 0.08; // بداية النص يمينًا
+    const leftMargin = minX + vbW * 0.08; // بداية النص يسارًا
+
+    // نجمع آيات كل سطر
+    const byLine = {};
+    for (const it of items) (byLine[it.line] ||= []).push(it);
+
+    // 6) ارسم صناديق الآيات "بعرض النص الفعلي"
+    const cache = {}; // per page cache
+    for (let ln = 1; ln <= LINES; ln++) {
+      const arr = byLine[ln] || [];
+      if (arr.length === 0) continue;
+      
+      // تحديد الجانب (يمين أو يسار) حسب موقع السطر
+      const isRightSide = ln <= 8; // الأسطر الأولى على اليمين
+      const startX = isRightSide ? rightMargin : leftMargin;
+      let offsetX = startX;
+      
+      for (const it of arr) {
+        const key = `${it.surah}:${it.ayah}`;
+        if (!cache[key]) {
+          const t = (it.text || '').replace(/\s+/g, ' ').trim();
+          const w = ctx.measureText(t).width;
+          cache[key] = { w, t };
+        }
+        const w = cache[key].w;
+        const h = vbH * 0.05; // ارتفاع محسن
+        const y = lineY(ln) - h/2;
+
+        // مستطيل شفاف فوق الآية نفسها
+        const r = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+        r.setAttribute('x', isRightSide ? offsetX - w : offsetX);
+        r.setAttribute('y', y);
+        r.setAttribute('width', w);
+        r.setAttribute('height', h);
+        r.setAttribute('fill', 'transparent');
+        r.setAttribute('data-ayah', key);
+        r.setAttribute('data-surah', it.surah);
+        r.setAttribute('data-ayah-num', it.ayah);
+        r.style.cursor = 'pointer';
+        r.style.pointerEvents = 'all';
+        
+        // تفاعل
+        r.addEventListener('mouseenter', () => {
+          r.classList.add('ayah-hover');
+          r.setAttribute('fill', 'rgba(255, 107, 53, 0.1)');
+        });
+        r.addEventListener('mouseleave', () => {
+          r.classList.remove('ayah-hover');
+          r.setAttribute('fill', 'transparent');
+        });
+        r.addEventListener('click', () => onAyahClick(it.surah, it.ayah, ln));
+        osvg.appendChild(r);
+
+        // تحديث الموضع للآية التالية
+        if (isRightSide) {
+          offsetX -= w + (vbW * 0.01); // مسافة بين الآيات
+        } else {
+          offsetX += w + (vbW * 0.01); // مسافة بين الآيات
+        }
+      }
+    }
+
+    function onAyahClick(surah, ayah, line) {
+      const logElement = document.getElementById('log');
+      logElement.innerHTML = `
+        <strong>الآية المحددة:</strong> ${surah}:${ayah} 
+        <br><strong>السطر:</strong> ${line}
+        <br><strong>النص:</strong> ${items.find(item => item.surah === surah && item.ayah === ayah)?.text || 'غير متوفر'}
+      `;
+      logElement.style.background = 'rgba(255, 107, 53, 0.1)';
+      logElement.style.border = '1px solid #ff6b35';
+      logElement.style.borderRadius = '8px';
+      logElement.style.padding = '10px';
+      
+      // إزالة التمييز من الآيات الأخرى
+      document.querySelectorAll('.ayah-selected').forEach(el => {
+        el.classList.remove('ayah-selected');
+        el.setAttribute('fill', 'transparent');
+      });
+      
+      // تمييز الآية المحددة
+      const selectedRect = document.querySelector(`[data-surah="${surah}"][data-ayah-num="${ayah}"]`);
+      if (selectedRect) {
+        selectedRect.classList.add('ayah-selected');
+        selectedRect.setAttribute('fill', 'rgba(255, 107, 53, 0.2)');
+        selectedRect.setAttribute('stroke', '#ff6b35');
+        selectedRect.setAttribute('stroke-width', '2');
+      }
+    }
+    
+  } catch (error) {
+    console.error('خطأ في تحميل الصفحة:', error);
+    document.getElementById('log').textContent = `خطأ: ${error.message}`;
+  }
+})();
+</script>
+</body>
+</html>

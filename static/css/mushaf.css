@@ -1,0 +1,155 @@
+/* static/css/mushaf.css */
+@font-face {
+  font-family: "HafsSmart";
+  src: url("/static/fonts/HafsSmart_08.ttf") format("truetype");
+  font-weight: normal; 
+  font-style: normal; 
+  font-display: swap;
+}
+
+body { 
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  margin: 0; 
+  font-family: "HafsSmart", Arial, sans-serif;
+  min-height: 100vh;
+}
+
+.page-wrap { 
+  max-width: 1200px; 
+  margin: 20px auto; 
+  padding: 0 20px; 
+}
+
+.mushaf-box { 
+  position: relative; 
+  border: 3px solid #2c5530; 
+  border-radius: 20px; 
+  background: #fefefe; 
+  box-shadow: 
+    0 20px 40px rgba(44, 85, 48, 0.15),
+    0 10px 20px rgba(44, 85, 48, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  overflow: hidden;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.mushaf-box:hover {
+  transform: translateY(-2px);
+  box-shadow: 
+    0 25px 50px rgba(44, 85, 48, 0.2),
+    0 15px 30px rgba(44, 85, 48, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+.svg-host, .overlay { 
+  width: 100%; 
+  display: block; 
+}
+
+.overlay { 
+  position: absolute; 
+  inset: 0; 
+  pointer-events: none; 
+}
+
+.overlay svg { 
+  width: 100%; 
+  height: auto; 
+  display: block; 
+}
+
+/* تحسينات إضافية */
+.page-header {
+  margin-bottom: 20px;
+  display: flex;
+  gap: 15px;
+  align-items: center;
+  padding: 15px 20px;
+  background: linear-gradient(135deg, #2c5530 0%, #3d6b42 100%);
+  border-radius: 15px;
+  color: white;
+  box-shadow: 0 8px 20px rgba(44, 85, 48, 0.3);
+}
+
+.page-title {
+  font-size: 24px;
+  font-weight: bold;
+  color: #fff;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+}
+
+.page-log {
+  color: #e8f5e8;
+  font-size: 14px;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 8px 12px;
+  border-radius: 20px;
+  backdrop-filter: blur(10px);
+}
+
+/* تأثيرات التفاعل */
+.ayah-hover {
+  stroke: #ff6b35 !important;
+  stroke-width: 2px !important;
+  transition: all 0.3s ease;
+  filter: drop-shadow(0 0 8px rgba(255, 107, 53, 0.4));
+}
+
+.ayah-selected {
+  fill: rgba(255, 107, 53, 0.2) !important;
+  stroke: #ff6b35 !important;
+  stroke-width: 2px !important;
+  transition: all 0.3s ease;
+  filter: drop-shadow(0 0 12px rgba(255, 107, 53, 0.6));
+}
+
+/* تحسينات للعرض على الأجهزة المختلفة */
+@media (max-width: 768px) {
+  .page-wrap {
+    margin: 10px auto;
+    padding: 0 10px;
+  }
+  
+  .mushaf-box {
+    border-radius: 15px;
+    border-width: 2px;
+  }
+  
+  .page-header {
+    padding: 12px 15px;
+    border-radius: 12px;
+  }
+  
+  .page-title {
+    font-size: 20px;
+  }
+  
+  .page-log {
+    font-size: 12px;
+    padding: 6px 10px;
+  }
+}
+
+/* تأثيرات إضافية */
+.mushaf-box::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #2c5530, #3d6b42, #4a7c59, #3d6b42, #2c5530);
+  z-index: 1;
+}
+
+/* تحسين الخط */
+@font-face {
+  font-family: "Amiri";
+  src: url("https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&display=swap");
+}
+
+/* تحسين النص العربي */
+svg text {
+  font-family: "HafsSmart", "Amiri", "Times New Roman", serif;
+  font-feature-settings: "liga" 1, "calt" 1;
+}

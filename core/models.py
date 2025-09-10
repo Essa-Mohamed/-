@@ -83,6 +83,11 @@ class Ayah(models.Model):
     text = models.TextField()
     page = models.ForeignKey(Page, on_delete=models.SET_NULL, null=True, blank=True)
     quarter = models.ForeignKey(Quarter, on_delete=models.SET_NULL, null=True, blank=True)
+    
+    # حقول جديدة للبيانات المطلوبة
+    line = models.PositiveSmallIntegerField(null=True, blank=True, help_text="رقم السطر في الصفحة")
+    text_imlaei = models.TextField(blank=True, help_text="النص الإملائي للآية")
+    text_uthmani = models.TextField(blank=True, help_text="النص العثماني للآية")
 
     class Meta:
         unique_together = ('surah', 'number')

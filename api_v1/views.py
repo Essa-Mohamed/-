@@ -3,6 +3,8 @@ from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST
 from django.http import JsonResponse
 from core.models import Student, Ayah, Quarter, Page
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated, AllowAny
 
 
 @login_required
@@ -61,4 +63,11 @@ def api_pages_select_first(request):
     request.session['pages_flow'] = flow
     
     return JsonResponse({'ok': True, 'next': 'pick_page_position'})
+
+
+# Simple DRF-based ping endpoint to verify DRF is wired correctly
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def ping(request):
+    return JsonResponse({"ok": True, "message": "pong"})
 
