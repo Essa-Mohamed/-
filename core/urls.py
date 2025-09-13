@@ -2,8 +2,9 @@
 from django.urls import path
 from . import views
 from .views_cbv.cbv import (
-    MainMenuView, AccountSettingsView, CustomLoginView, 
-    CustomLogoutView, LandingView, SignupView
+    MainMenuView, AccountSettingsView, CustomLoginView,
+    CustomLogoutView, LandingView, SignupView,
+    ComplaintView, AdminComplaintsView,
 )
 
 app_name = "core"
@@ -29,8 +30,8 @@ urlpatterns = [
     path("pages/quarter-pick/<int:qid>/", views.pages_quarter_pick, name="pages_quarter_pick"),
 
     # Complaints
-    path("complaint/", views.complaint, name="complaint"),
-    path("admin/complaints/", views.admin_complaints, name="admin_complaints"),
+    path("complaint/", ComplaintView.as_view(), name="complaint"),
+    path("admin/complaints/", AdminComplaintsView.as_view(), name="admin_complaints"),
 
     path("account/", AccountSettingsView.as_view(), name="account_settings"),
 
