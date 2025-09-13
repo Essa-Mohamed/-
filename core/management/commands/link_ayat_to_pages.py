@@ -1,7 +1,8 @@
 import sqlite3
 from pathlib import Path
 from django.core.management.base import BaseCommand
-from core.models import Ayah, Page
+from quran_structure.models import Ayah
+from core.models import Page
 
 # هنحاول نكتشف أسماء الأعمدة الشائعة في جدول words تلقائيًا
 WORDS_COL_SETS = [

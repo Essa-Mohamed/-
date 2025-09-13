@@ -4,7 +4,8 @@ import django
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'quran_helper.settings')
 django.setup()
 
-from core.models import PhraseOccurrence, Phrase, Ayah
+from core.models import PhraseOccurrence, Phrase
+from quran_structure.models import Ayah
 from django.db.models import Count
 
 print("=== فحص الجزء 1 بالتفصيل ===")

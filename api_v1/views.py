@@ -2,7 +2,9 @@ from django.shortcuts import get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST
 from django.http import JsonResponse
-from core.models import Student, Ayah, Quarter, Page
+from students.models import Student
+from quran_structure.models import Ayah, Quarter
+from core.models import Page
 
 
 @login_required

@@ -9,7 +9,10 @@ from django.utils import timezone
 import math
 import random
 
-from core.models import Student, TestSession, TestQuestion, Juz, Quarter, Page, Ayah, SimilarityGroup, Phrase, PhraseOccurrence
+from students.models import Student
+from testing.models import TestSession, TestQuestion
+from quran_structure.models import Juz, Quarter, Ayah
+from core.models import Page, SimilarityGroup, Phrase, PhraseOccurrence
 
 
 class TestService:

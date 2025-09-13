@@ -8,7 +8,10 @@ from django.db.models import Count
 import math
 import random
 
-from core.models import Student, Juz, Quarter, Phrase, PhraseOccurrence, Ayah, TestSession, TestQuestion
+from students.models import Student
+from quran_structure.models import Juz, Quarter, Ayah
+from testing.models import TestSession, TestQuestion
+from core.models import Phrase, PhraseOccurrence
 from core.services.user_service import UserService
 from tests_app.services.test_service import TestService
 

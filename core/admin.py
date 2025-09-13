@@ -2,10 +2,10 @@ from django.contrib import admin
 from django.contrib.auth.models import User, Group
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 
-from .models import (
-    Complaint, Student, Juz, Quarter, SimilarityGroup, Ayah,
-    TestSession, TestQuestion, Phrase, PhraseOccurrence
-)
+from students.models import Complaint, Student
+from quran_structure.models import Juz, Quarter, Ayah
+from testing.models import TestSession, TestQuestion
+from .models import SimilarityGroup, Phrase, PhraseOccurrence
 
 # --------- تخصيص عرض الـUsers في الأدمن ---------
 # أخفي Groups (اختياري)

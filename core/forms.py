@@ -166,7 +166,7 @@ class SignupForm(UserCreationForm):
         if commit:
             user.save()
             # إنشاء ملف شخصي للطالب مع اسم العرض
-            from .models import Student
+            from students.models import Student
             Student.objects.create(
                 user=user,
                 display_name=self.cleaned_data['display_name']

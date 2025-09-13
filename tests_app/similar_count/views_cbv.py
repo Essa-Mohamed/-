@@ -3,7 +3,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views.generic import TemplateView, DetailView, FormView
 from django.contrib import messages
 
-from core.models import TestSession
+from testing.models import TestSession
 from tests_app.services.test_service import TestService
 from core.services.user_service import UserService
 
@@ -18,7 +18,7 @@ class SelectionView(LoginRequiredMixin, TemplateView):
         context['student'] = student
         context['selected_test_type'] = 'similar_count'
 
-        from core.models import Juz, Quarter
+        from quran_structure.models import Juz, Quarter
         juz_quarters_map = {}
         for juz in Juz.objects.all():
             quarters = Quarter.objects.filter(juz=juz).order_by('index_in_juz')

@@ -5,7 +5,10 @@ from django.urls import reverse
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 
-from core.models import Student, Juz, Quarter, Phrase, PhraseOccurrence, Ayah, TestSession, TestQuestion
+from students.models import Student
+from quran_structure.models import Juz, Quarter, Ayah
+from testing.models import TestSession, TestQuestion
+from core.models import Phrase, PhraseOccurrence
 from core.services.user_service import UserService
 from tests_app.services.test_service import TestService
 

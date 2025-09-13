@@ -1,5 +1,6 @@
 from django.core.management.base import BaseCommand
-from core.models import Juz, Quarter, Ayah, Phrase, PhraseOccurrence
+from quran_structure.models import Juz, Quarter, Ayah
+from core.models import Phrase, PhraseOccurrence
 import json
 from pathlib import Path
 import re

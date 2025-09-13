@@ -1,4 +1,4 @@
-from .models import Student
+from students.models import Student
 from django.conf import settings
 
 

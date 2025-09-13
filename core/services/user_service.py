@@ -6,7 +6,7 @@ from django.contrib.auth.models import User
 from django.db import transaction
 from django.core.exceptions import ValidationError
 
-from core.models import Student
+from students.models import Student
 
 
 class UserService:

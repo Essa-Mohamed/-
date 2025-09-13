@@ -5,7 +5,8 @@ from typing import Dict, List, Optional
 from django.db.models import Count, Sum, Avg, Q
 from django.contrib.auth.models import User
 
-from core.models import Student, TestSession, TestQuestion
+from students.models import Student
+from testing.models import TestSession, TestQuestion
 
 
 class StatsService:

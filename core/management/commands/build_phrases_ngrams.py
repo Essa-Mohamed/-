@@ -1,6 +1,7 @@
 from django.core.management.base import BaseCommand
 from django.db import transaction
-from core.models import Ayah, Phrase, PhraseOccurrence
+from quran_structure.models import Ayah
+from core.models import Phrase, PhraseOccurrence
 import re, unicodedata
 from collections import defaultdict
 

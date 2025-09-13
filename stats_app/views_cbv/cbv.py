@@ -8,7 +8,7 @@ from django.contrib import messages
 from django.urls import reverse_lazy
 from django.http import JsonResponse
 
-from core.models import Student
+from students.models import Student
 from stats_app.services.stats_service import StatsService
 
 

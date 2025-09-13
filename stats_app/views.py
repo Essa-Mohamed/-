@@ -1,7 +1,8 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from core.models import Student, TestSession, TestQuestion
+from students.models import Student
+from testing.models import TestSession, TestQuestion
 
 
 def _score_formula(exams, correct, wrong, unanswered):

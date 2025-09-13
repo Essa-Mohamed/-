@@ -16,7 +16,10 @@ import sys
 import os, math, random, re, unicodedata
 from django.views.decorators.http import require_POST
 from .forms import ProfileUpdateForm, PasswordChangeForm
-from .models import Student, Complaint, Juz, Quarter, SimilarityGroup, Ayah, Phrase, PhraseOccurrence, TestSession, TestQuestion, Page
+from students.models import Student, Complaint
+from quran_structure.models import Juz, Quarter, Ayah
+from testing.models import TestSession, TestQuestion
+from .models import SimilarityGroup, Phrase, PhraseOccurrence, Page
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 

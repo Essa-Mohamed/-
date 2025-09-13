@@ -10,7 +10,8 @@ from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from django.utils.decorators import method_decorator
 
-from core.models import Student, TestSession
+from students.models import Student
+from testing.models import TestSession
 from tests_app.services.test_service import TestService
 
 
@@ -34,7 +35,7 @@ class TestSelectionView(LoginRequiredMixin, TemplateView):
         context['num_questions_options'] = [5, 10, 15, 20, 25, 30]
         
         # إضافة بيانات الأجزاء والأرباع
-        from core.models import Juz, Quarter
+        from quran_structure.models import Juz, Quarter
         juz_quarters_map = {}
         
         for juz in Juz.objects.all():
