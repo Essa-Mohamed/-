@@ -2,7 +2,7 @@
 Class-Based Views للـ Core App
 """
 from django.shortcuts import render, redirect
-from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.views import LoginView, LogoutView
 from django.views.generic import TemplateView, FormView
 from django.contrib import messages
@@ -11,6 +11,8 @@ from django.http import Http404
 
 from core.services.user_service import UserService
 from core.forms import LoginForm, SignupForm
+from core.models import Complaint
+from core.views import COMPLAINT_TYPES
 
 
 def check_test_permissions(user):
@@ -275,5 +277,61 @@ class SignupView(FormView):
             self.request,
             'تم إنشاء الحساب بنجاح! يمكنك الآن تسجيل الدخول.'
         )
-        
+
         return super().form_valid(form)
+
+
+class ComplaintView(LoginRequiredMixin, TemplateView):
+    """إرسال شكوى أو اقتراح"""
+
+    template_name = 'core/complaint.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        user_service = UserService()
+        student = user_service.get_or_create_student(self.request.user)
+        context.update({'student': student, 'types': COMPLAINT_TYPES, 'hide_footer': False})
+        return context
+
+    def post(self, request, *args, **kwargs):
+        user_service = UserService()
+        student = user_service.get_or_create_student(request.user)
+        cats = request.POST.getlist('category')
+        txt = request.POST.get('text', '').strip()
+        if not txt and not cats:
+            messages.error(request, 'لا يمكن إرسال شكوى فارغة.')
+            return self.get(request, *args, **kwargs)
+        prefix = f"[{', '.join(cats)}] " if cats else ''
+        Complaint.objects.create(student=student, text=prefix + txt if txt else prefix)
+        messages.success(request, '📝 تم إرسال الشكوى/الاقتراح بنجاح. شكراً لك على مساعدتنا في تحسين المنصة!')
+        return redirect('core:main_menu')
+
+
+class AdminComplaintsView(UserPassesTestMixin, LoginRequiredMixin, TemplateView):
+    """عرض وإدارة الشكاوى للمشرفين"""
+
+    template_name = 'core/complaint_admin.html'
+
+    def test_func(self):
+        return self.request.user.is_staff
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        comps = Complaint.objects.select_related('student__user').order_by('-created_at')
+        context.update({'complaints': comps, 'hide_footer': False})
+        return context
+
+    def post(self, request, *args, **kwargs):
+        cid = request.POST.get('complaint_id')
+        action = request.POST.get('action')
+        if cid and action:
+            try:
+                c = Complaint.objects.get(id=cid)
+                if action == 'toggle':
+                    c.resolved = not c.resolved
+                    c.save()
+                    status = 'تم حلها' if c.resolved else 'غير محلولة'
+                    messages.success(request, f"✅ تم تحديث حالة الشكوى #{cid} إلى: {status}")
+            except Complaint.DoesNotExist:
+                messages.error(request, 'الشكوى غير موجودة.')
+        return self.get(request, *args, **kwargs)

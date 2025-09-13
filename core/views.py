@@ -19,6 +19,15 @@ from .forms import ProfileUpdateForm, PasswordChangeForm
 from .models import Student, Complaint, Juz, Quarter, SimilarityGroup, Ayah, Phrase, PhraseOccurrence, TestSession, TestQuestion, Page
 from django.contrib.auth import get_user_model
 from django.test import TestCase
+from core.services.grading_service import (
+    GradingService,
+    PAGES_BONUS_ORDER,
+    PENALTY_WRONG_JUZ_OTHER,
+    PENALTY_WRONG_QUARTER_OTHER,
+    PENALTY_EMPTY_JUZ,
+    PENALTY_EMPTY_QUARTER,
+    FAIL_THRESHOLD,
+)
 
 # UTF-8 safe print for Windows consoles (avoid UnicodeEncodeError)
 def print(*args, sep=" ", end="\n", file=None, flush=False):
@@ -48,28 +57,18 @@ def print(*args, sep=" ", end="\n", file=None, flush=False):
 AR_ORD={1:"الأول",2:"الثاني",3:"الثالث",4:"الرابع",5:"الخامس",6:"السادس",7:"السابع",8:"الثامن",9:"التاسع",10:"العاشر"}
 def ar_ordinal(n:int)->str: return f"{AR_ORD.get(n,n)}"
 
-PAGES_BONUS_ORDER=15; PENALTY_WRONG_JUZ_OTHER=8; PENALTY_WRONG_QUARTER_OTHER=6; PENALTY_EMPTY_JUZ=5; PENALTY_EMPTY_QUARTER=4; FAIL_THRESHOLD=50
 
 def _grade_state(request):
-    st=request.session.get('pages_grade') or {}
-    st.setdefault('bonus',0); st.setdefault('penalty',0); st.setdefault('events',[]); st.setdefault('order_set',False)
-    request.session['pages_grade']=st; return st
+    return GradingService(request).state()
 
 def _grade_push(request,text:str,delta:int):
-    st=_grade_state(request)
-    if delta>=0: st['bonus']=min(100,int(st.get('bonus',0))+int(delta))
-    else: st['penalty']=min(100,int(st.get('penalty',0))+int(-delta))
-    st['events'].insert(0,{'t':text,'d':int(delta)}); request.session['pages_grade']=st
-    score=max(0,min(100,100-int(st['penalty'])+int(st['bonus']))); return int(score),int(delta)
+    return GradingService(request).push(text,delta)
 
 def _grade_get(request):
-    st=_grade_state(request); score=max(0,min(100,100-int(st.get('penalty',0))+int(st.get('bonus',0)))); return int(score),st
+    return GradingService(request).get()
 
 def _grade_mark_order(request):
-    st=_grade_state(request)
-    if not st.get('order_set'):
-        st['order_set']=True; request.session['pages_order']=True; _grade_push(request,"اختيار بالترتيب (Bonus)",+PAGES_BONUS_ORDER)
-    return _grade_get(request)
+    return GradingService(request).mark_order()
 
 def _current_question_and_flow(request):
     qs=request.session.get('questions') or []; flow=request.session.get('pages_flow') or {}; q_index=flow.get('q_index')
@@ -445,21 +444,6 @@ def _leaderboard():
         print(f"خطأ في حساب الليدر بورد: {e}")
         return []
 
-@login_required
-def complaint(request):
-    # الحصول على الطالب من المستخدم المسجل
-    from core.services.user_service import UserService
-    user_service = UserService()
-    student = user_service.get_or_create_student(request.user)
-    if request.method=='POST':
-        cats=request.POST.getlist('category'); txt=request.POST.get('text','').strip()
-        if not txt and not cats: messages.error(request,"لا يمكن إرسال شكوى فارغة.")
-        else:
-            prefix=f"[{', '.join(cats)}] " if cats else ''
-            Complaint.objects.create(student=student,text=prefix+txt if txt else prefix)
-            messages.success(request,"📝 تم إرسال الشكوى/الاقتراح بنجاح. شكراً لك على مساعدتنا في تحسين المنصة!")
-            return redirect('core:main_menu')
-    return render(request,'core/complaint.html',{'student':student,'types':COMPLAINT_TYPES,'hide_footer':False})
 
 def test_catalog(request):
     tests=[
@@ -1617,22 +1601,6 @@ def test_question(request):
         }
         
         return render(request, 'core/test_question.html', context)
-
-@user_passes_test(lambda u:u.is_staff)
-@login_required
-def admin_complaints(request):
-    comps=Complaint.objects.select_related('student__user').order_by('-created_at')
-    if request.method=='POST':
-        cid=request.POST.get('complaint_id'); action=request.POST.get('action')
-        try:
-            c=Complaint.objects.get(id=cid)
-            if action=='toggle': 
-                c.resolved=not c.resolved
-                c.save()
-                status = "تم حلها" if c.resolved else "غير محلولة"
-                messages.success(request,f"✅ تم تحديث حالة الشكوى #{cid} إلى: {status}")
-        except Complaint.DoesNotExist: messages.error(request,"الشكوى غير موجودة.")
-    return render(request,'core/complaint_admin.html',{'complaints':comps,'hide_footer':False})
 
 @login_required
 @require_POST
